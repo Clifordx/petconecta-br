@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { PawPrint, Heart } from 'lucide-react';
 
@@ -10,7 +10,7 @@ export function Footer() {
           <div className="col-span-1 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 text-primary-600 mb-4">
               <PawPrint className="h-6 w-6" />
-              <span className="font-bold text-lg text-gray-900">Pet Paraná</span>
+              <span className="font-bold text-lg text-gray-900">PetConecta BR</span>
             </Link>
             <p className="text-gray-500 text-sm">
               Sistema de gestão de bem-estar animal para municípios do Paraná.
@@ -48,7 +48,7 @@ export function Footer() {
         
         <div className="mt-8 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-gray-400">
-            © {new Date().getFullYear()} Pet Paraná. Todos os direitos reservados.
+            © {new Date().getFullYear()} PetConecta BR. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-1 text-sm text-gray-500">
             Feito com <Heart className="h-4 w-4 text-red-500 mx-1" /> no Paraná

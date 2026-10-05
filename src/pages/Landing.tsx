@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Stethoscope, AlertTriangle, Home, Calendar, CreditCard, Shield, Dog, Cat, ArrowRight } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 text-emerald-600">
             <Dog className="h-8 w-8" />
-            <span className="text-2xl font-bold tracking-tight">Pet Paraná</span>
+            <span className="text-2xl font-bold tracking-tight">PetConecta BR</span>
           </div>
           <div className="flex items-center gap-4">
             <Link to="/login" className="text-gray-600 hover:text-emerald-600 font-medium hidden sm:block">Entrar</Link>
@@ -175,7 +175,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-gray-500">
           <div className="flex justify-center items-center gap-2 text-emerald-600 mb-4">
             <Dog className="h-6 w-6" />
-            <span className="text-xl font-bold">Pet Paraná</span>
+            <span className="text-xl font-bold">PetConecta BR</span>
           </div>
           <p>© {new Date().getFullYear()} Sistema Integrado de Bem-Estar Animal do Paraná. Todos os direitos reservados.</p>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useForm } from 'react-hook-form'; // Make sure it's react-hook-form
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -99,7 +99,7 @@ const Cadastro = () => {
           <Dog className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
           <h2 className="text-3xl font-extrabold text-gray-900">Crie sua Conta</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Junte-se ao Pet Paraná e ajude a cuidar dos nossos animais
+            Junte-se ao PetConecta BR e ajude a cuidar dos nossos animais
           </p>
         </div>
 

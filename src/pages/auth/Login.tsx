@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,7 +55,7 @@ const Login = () => {
               <Dog className="h-8 w-8" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">Bem-vindo de volta!</h2>
-            <p className="text-gray-500 mt-2">Acesse sua conta no Pet Paraná</p>
+            <p className="text-gray-500 mt-2">Acesse sua conta no PetConecta BR</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -64,7 +64,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {/* Organization Info */}
         <div className="p-4 border-b border-gray-200">
           <div className="font-semibold text-gray-900 truncate">
-            {organization?.nome || 'Sistema Pet Paraná'}
+            {organization?.nome || 'Sistema PetConecta BR'}
           </div>
           <div className="mt-2 flex gap-2">
             <Badge variant="primary" className="text-xs">

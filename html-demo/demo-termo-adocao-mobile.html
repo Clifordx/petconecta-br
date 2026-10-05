@@ -1,0 +1,331 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ficha & Termo de Adoção - PetConecta BR</title>
+  <!-- Tailwind CSS via CDN para visualização direta -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    @media print {
+      body * { visibility: hidden; }
+      #area-impressao, #area-impressao * { visibility: visible; }
+      #area-impressao {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: white;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen pb-16">
+
+  <!-- Topo Mobile -->
+  <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-30 no-print">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🐾</span>
+        <div>
+          <h1 class="font-bold text-lg leading-tight">PetConecta BR</h1>
+          <p class="text-xs text-emerald-100">Feira de Adoção • Arapongas-PR</p>
+        </div>
+      </div>
+      <span class="bg-emerald-700 text-xs px-2.5 py-1 rounded-full font-semibold border border-emerald-500">
+        Ficha Presencial
+      </span>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-4 space-y-4">
+
+    <!-- Indicador de Passos -->
+    <div class="bg-white rounded-xl shadow-sm p-3 flex justify-between items-center text-xs font-medium text-slate-500 no-print">
+      <div class="flex items-center gap-1.5 text-emerald-600 font-bold">
+        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">1</span>
+        <span>Animal</span>
+      </div>
+      <div class="h-0.5 w-6 bg-emerald-300"></div>
+      <div class="flex items-center gap-1.5 text-emerald-600 font-bold">
+        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">2</span>
+        <span>Adotante</span>
+      </div>
+      <div class="h-0.5 w-6 bg-emerald-300"></div>
+      <div class="flex items-center gap-1.5 text-emerald-600 font-bold">
+        <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs">3</span>
+        <span>Assinatura</span>
+      </div>
+    </div>
+
+    <!-- ÁREA COMPLETA DO TERMO E FICHA (Imprimível) -->
+    <div id="area-impressao" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 space-y-5">
+      
+      <!-- Cabeçalho Oficial no Termo -->
+      <div class="border-b border-slate-200 pb-4 text-center">
+        <div class="inline-block p-2 bg-emerald-50 rounded-xl mb-1">
+          <span class="text-3xl">🐾</span>
+        </div>
+        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">TERMO DE ADOÇÃO RESPONSÁVEL</h2>
+        <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Prefeitura Municipal & ONGs Parceiras • Arapongas - PR</p>
+      </div>
+
+      <!-- 1. Dados do Animal -->
+      <div>
+        <h3 class="text-sm font-bold text-emerald-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+          <span>🐕</span> 1. Identificação do Animal
+        </h3>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-400 block font-medium">Nome</span>
+            <input id="pet-nome" type="text" value="Thor" class="font-bold text-slate-900 bg-transparent w-full focus:bg-white focus:outline-emerald-500 rounded px-1">
+          </div>
+          <div>
+            <span class="text-slate-400 block font-medium">Espécie</span>
+            <select id="pet-especie" class="font-bold text-slate-900 bg-transparent w-full focus:bg-white focus:outline-emerald-500 rounded px-1">
+              <option value="Cão" selected>Cão</option>
+              <option value="Gato">Gato</option>
+            </select>
+          </div>
+          <div>
+            <span class="text-slate-400 block font-medium">Porte / Sexo</span>
+            <input id="pet-porte" type="text" value="Médio • Macho" class="font-bold text-slate-900 bg-transparent w-full focus:bg-white focus:outline-emerald-500 rounded px-1">
+          </div>
+          <div>
+            <span class="text-slate-400 block font-medium">Castrado / Vacinado</span>
+            <input id="pet-saude" type="text" value="Sim (Castrado e V8)" class="font-bold text-emerald-700 bg-transparent w-full focus:bg-white focus:outline-emerald-500 rounded px-1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Dados do Adotante (Preenchimento Rápido no Celular) -->
+      <div>
+        <h3 class="text-sm font-bold text-emerald-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+          <span>👤</span> 2. Dados do Adotante (Tutor)
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+            <input id="adotante-nome" type="text" placeholder="Nome do adotante" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">CPF</label>
+              <input id="adotante-cpf" type="text" placeholder="000.000.000-00" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">RG</label>
+              <input id="adotante-rg" type="text" placeholder="RG do tutor" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">WhatsApp / Telefone</label>
+            <input id="adotante-tel" type="tel" placeholder="(43) 99999-9999" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">CEP (Busca automática)</label>
+            <div class="flex gap-2">
+              <input id="adotante-cep" type="text" placeholder="86700-000" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <button type="button" onclick="buscarCep()" class="no-print bg-slate-200 hover:bg-slate-300 px-3 rounded-lg text-xs font-bold text-slate-700">Buscar</button>
+            </div>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Endereço Completo</label>
+            <input id="adotante-end" type="text" placeholder="Rua, número, bairro, cidade" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Cláusulas de Compromisso -->
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 space-y-1.5 leading-relaxed">
+        <p class="font-bold flex items-center gap-1">
+          <span>⚖️</span> Declarações e Cláusulas Legais (Lei Federal 9.605/98):
+        </p>
+        <p>1. O adotante compromete-se a fornecer alimentação sadia, abrigo adequado e cuidados veterinários regulares.</p>
+        <p>2. É expressamente <strong>PROIBIDO</strong> o abandono, agressão, repasse para terceiros ou uso para reprodução comercial.</p>
+        <p>3. A equipe da entidade ou autoridades do município poderão realizar visitas de acompanhamento pós-adoção.</p>
+        <p>4. Em caso de impossibilidade de manter o animal, a entidade originária deverá ser imediatamente comunicada.</p>
+      </div>
+
+      <!-- 4. Assinatura na Tela do Celular (Canvas com o dedo) -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-bold text-emerald-700 uppercase tracking-wide flex items-center gap-1.5">
+            <span>✍️</span> 4. Assinatura do Adotante
+          </label>
+          <button type="button" onclick="limparAssinatura()" class="no-print text-xs text-rose-600 hover:text-rose-800 font-semibold underline">
+            Limpar / Assinar Novamente
+          </button>
+        </div>
+        
+        <div class="border-2 border-dashed border-emerald-400 rounded-xl bg-white relative overflow-hidden">
+          <canvas id="canvas-assinatura" class="w-full h-36 touch-none cursor-crosshair block bg-slate-50"></canvas>
+          <div id="dica-assinatura" class="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs">
+            Assine aqui com o dedo ou caneta touch
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">
+          Arapongas-PR, <span id="data-atual"></span>. Assinado digitalmente com IP/Carimbo de data.
+        </p>
+      </div>
+
+      <!-- 5. Anexo da Foto da Ficha Impressa / Assinada (Câmera do Celular) -->
+      <div class="no-print pt-2 border-t border-slate-200">
+        <label class="text-sm font-bold text-slate-700 block mb-1 flex items-center gap-1.5">
+          <span>📷</span> Foto da Ficha Física Assinada (Opcional - Dupla Evidência)
+        </label>
+        <p class="text-xs text-slate-500 mb-2">
+          Se você imprimiu a via física, tire uma foto do papel assinado para arquivar junto no sistema:
+        </p>
+        
+        <div class="flex items-center gap-3">
+          <label class="cursor-pointer bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-sm">
+            <span>📸 Abrir Câmera</span>
+            <input type="file" accept="image/*" capture="environment" onchange="previewFoto(event)" class="hidden">
+          </label>
+          <span id="nome-foto" class="text-xs text-slate-500 truncate max-w-xs">Nenhuma foto anexada</span>
+        </div>
+
+        <div id="preview-container" class="hidden mt-3">
+          <img id="img-preview" src="" alt="Ficha assinada" class="w-32 h-32 object-cover rounded-lg border-2 border-emerald-500 shadow-sm">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Botões de Ação Fixos no Mobile -->
+    <div class="grid grid-cols-2 gap-3 no-print pt-2">
+      <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow">
+        <span>🖨️</span> Imprimir Folha (2 vias)
+      </button>
+
+      <button onclick="finalizarAdocao()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-md">
+        <span>✅</span> Liberar Animal
+      </button>
+    </div>
+
+  </main>
+
+  <script>
+    // Configura data atual
+    const hoje = new Date();
+    document.getElementById('data-atual').innerText = hoje.toLocaleDateString('pt-BR');
+
+    // Canvas de Assinatura com o Dedo
+    const canvas = document.getElementById('canvas-assinatura');
+    const ctx = canvas.getContext('2d');
+    const dica = document.getElementById('dica-assinatura');
+    let desenhando = false;
+
+    function ajustarTamanhoCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#064e3b';
+    }
+    window.addEventListener('resize', ajustarTamanhoCanvas);
+    setTimeout(ajustarTamanhoCanvas, 100);
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function comecarDesenho(e) {
+      desenhando = true;
+      dica.style.display = 'none';
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      e.preventDefault();
+    }
+
+    function desenhar(e) {
+      if (!desenhando) return;
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+      e.preventDefault();
+    }
+
+    function pararDesenho() {
+      desenhando = false;
+    }
+
+    canvas.addEventListener('mousedown', comecarDesenho);
+    canvas.addEventListener('mousemove', desenhar);
+    canvas.addEventListener('mouseup', pararDesenho);
+    canvas.addEventListener('mouseleave', pararDesenho);
+
+    canvas.addEventListener('touchstart', comecarDesenho, { passive: false });
+    canvas.addEventListener('touchmove', desenhar, { passive: false });
+    canvas.addEventListener('touchend', pararDesenho);
+
+    function limparAssinatura() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      dica.style.display = 'flex';
+    }
+
+    // Busca rápida de CEP no ViaCEP
+    async function buscarCep() {
+      const cep = document.getElementById('adotante-cep').value.replace(/\D/g, '');
+      if (cep.length === 8) {
+        try {
+          const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+          const data = await res.json();
+          if (!data.erro) {
+            document.getElementById('adotante-end').value = `${data.logradouro}, nº , ${data.bairro}, ${data.localidade}-${data.uf}`;
+          } else {
+            alert('CEP não encontrado');
+          }
+        } catch (err) {
+          alert('Erro ao buscar CEP');
+        }
+      } else {
+        alert('Digite um CEP com 8 dígitos');
+      }
+    }
+
+    // Preview da Foto da Ficha Assinada
+    function previewFoto(e) {
+      const file = e.target.files[0];
+      if (file) {
+        document.getElementById('nome-foto').innerText = file.name;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          document.getElementById('img-preview').src = evt.target.result;
+          document.getElementById('preview-container').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function finalizarAdocao() {
+      const nome = document.getElementById('adotante-nome').value.trim();
+      const cpf = document.getElementById('adotante-cpf').value.trim();
+      const pet = document.getElementById('pet-nome').value;
+
+      if (!nome || !cpf) {
+        alert('Por favor, preencha o Nome e CPF do adotante.');
+        return;
+      }
+
+      alert(`🎉 Parabéns! Adoção de "${pet}" para ${nome} concluída com sucesso no sistema!\n\nStatus do animal atualizado para: ADOTADO.`);
+    }
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, PawPrint, User, LogOut, Settings, MapPin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,7 +31,7 @@ export function Header() {
           <div className="flex-shrink-0 flex items-center">
             <Link to="/" className="flex items-center gap-2 text-primary-600">
               <PawPrint className="h-8 w-8" />
-              <span className="font-bold text-xl hidden sm:block text-gray-900">Pet Paraná</span>
+              <span className="font-bold text-xl hidden sm:block text-gray-900">PetConecta BR</span>
             </Link>
           </div>
 
