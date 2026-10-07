@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Dog, Cat, ArrowLeft, Loader2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import imglyRemoveBackground from '@imgly/background-removal';
 
 const petSchema = z.object({
   nome: z.string().min(2, 'Nome é obrigatório'),
@@ -29,6 +30,7 @@ const NovoPet = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<PetForm>({
     resolver: zodResolver(petSchema),
@@ -44,11 +46,58 @@ const NovoPet = () => {
   const especie = watch('especie');
   const sexo = watch('sexo');
 
-  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setFoto(file);
-      setPreview(URL.createObjectURL(file));
+      
+      // Show immediate preview
+      const tempPreview = URL.createObjectURL(file);
+      setPreview(tempPreview);
+      setIsProcessingImage(true);
+      
+      try {
+        toast.info('Removendo o fundo da foto com Inteligência Artificial...', { duration: 4000 });
+        
+        // Remove background (returns transparent PNG blob)
+        const transparentBlob = await imglyRemoveBackground(file);
+        
+        // Draw on white background and convert to smaller JPG
+        const processedFile = await new Promise<File>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject('Context error');
+            
+            // Draw White Background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Transparent Image
+            ctx.drawImage(img, 0, 0);
+            
+            canvas.toBlob((blob) => {
+              if (!blob) return reject('Blob error');
+              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg' });
+              resolve(newFile);
+            }, 'image/jpeg', 0.9);
+          };
+          img.src = URL.createObjectURL(transparentBlob);
+        });
+        
+        setFoto(processedFile);
+        setPreview(URL.createObjectURL(processedFile));
+        toast.success('Fundo removido com sucesso!');
+      } catch (error) {
+        console.error('Erro ao processar imagem:', error);
+        toast.error('Não foi possível remover o fundo automaticamente. Usando foto original.');
+        setFoto(file);
+      } finally {
+        setIsProcessingImage(false);
+      }
     }
   };
 
@@ -153,6 +202,12 @@ const NovoPet = () => {
             {preview ? (
               <div className="relative w-40 h-40 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
                 <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                {isProcessingImage && (
+                  <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-emerald-600 animate-spin mb-1" />
+                    <span className="text-xs font-semibold text-emerald-700">IA Processando...</span>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={removeFoto}
@@ -246,7 +301,7 @@ const NovoPet = () => {
             <button type="button" onClick={() => navigate(-1)} className="mr-4 px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
               Cancelar
             </button>
-            <button type="submit" disabled={isLoading} className="bg-emerald-600 text-white px-8 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center disabled:opacity-50">
+            <button type="submit" disabled={isLoading || isProcessingImage} className="bg-emerald-600 text-white px-8 py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition-colors flex items-center disabled:opacity-50">
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
               Salvar Pet
             </button>
