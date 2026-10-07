@@ -254,18 +254,33 @@ const PetDetalhes = () => {
               <Activity className="w-4 h-4 mr-2 text-emerald-600" /> Saúde
             </h3>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-3 ${pet.castrado ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
-                <span className={pet.castrado ? 'text-gray-900' : 'text-gray-500'}>
-                  {pet.castrado ? 'Castrado' : 'Não castrado'}
-                </span>
+              {isEditing ? (
+              <li className="space-y-4 pt-2">
+                <label className="flex items-center cursor-pointer">
+                  <input type="checkbox" checked={editForm.castrado} onChange={e => setEditForm({...editForm, castrado: e.target.checked})} className="w-4 h-4 text-emerald-600 rounded mr-3" />
+                  <span className="text-sm font-medium text-gray-900">Pet Castrado</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input type="checkbox" checked={editForm.vacinado} onChange={e => setEditForm({...editForm, vacinado: e.target.checked})} className="w-4 h-4 text-emerald-600 rounded mr-3" />
+                  <span className="text-sm font-medium text-gray-900">Vacinas em dia</span>
+                </label>
               </li>
-              <li className="flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-3 ${pet.vacinado ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
-                <span className={pet.vacinado ? 'text-gray-900' : 'text-gray-500'}>
-                  {pet.vacinado ? 'Vacinado' : 'Sem vacinas registradas'}
-                </span>
-              </li>
+            ) : (
+              <>
+                <li className="flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-3 ${pet.castrado ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
+                  <span className={pet.castrado ? 'text-gray-900' : 'text-gray-500'}>
+                    {pet.castrado ? 'Castrado' : 'Não castrado'}
+                  </span>
+                </li>
+                <li className="flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-3 ${pet.vacinado ? 'bg-emerald-500' : 'bg-gray-300'}`}></div>
+                  <span className={pet.vacinado ? 'text-gray-900' : 'text-gray-500'}>
+                    {pet.vacinado ? 'Vacinado' : 'Sem vacinas registradas'}
+                  </span>
+                </li>
+              </>
+            )}
               {pet.microchip && (
                 <li className="flex items-center pt-2 mt-2 border-t border-gray-100">
                   <span className="text-gray-500 mr-2">Microchip:</span>
@@ -304,8 +319,16 @@ const PetDetalhes = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
               <FileText className="w-5 h-5 mr-2 text-gray-400" /> Observações
             </h3>
-            {pet.observacoes ? (
-              <div className="bg-gray-50 rounded-lg p-4 text-gray-700 text-sm leading-relaxed border border-gray-100">
+            {isEditing ? (
+              <textarea 
+                value={editForm.observacoes}
+                onChange={e => setEditForm({...editForm, observacoes: e.target.value})}
+                className="w-full border-gray-300 rounded-lg p-3 focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50"
+                rows={4}
+                placeholder="Ex: Alérgico a dipirona, não gosta de gatos..."
+              />
+            ) : pet.observacoes ? (
+              <div className="bg-gray-50 rounded-lg p-4 text-gray-700 text-sm leading-relaxed border border-gray-100 whitespace-pre-line">
                 {pet.observacoes}
               </div>
             ) : (
