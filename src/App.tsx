@@ -82,21 +82,21 @@ function AppRoutes() {
         <Route path="/acompanhar-denuncia" element={<AcompanharDenuncia />} />
         
         {/* Rotas Cidadão/Tutor */}
-        <Route path="/app/dashboard" element={<ProtectedRoute allowedRoles={['CIDADAO']}><MeusPets /></ProtectedRoute>} />
-        <Route path="/app/meus-pets" element={<ProtectedRoute allowedRoles={['CIDADAO']}><MeusPets /></ProtectedRoute>} />
-        <Route path="/app/meus-pets/novo" element={<ProtectedRoute allowedRoles={['CIDADAO']}><NovoPet /></ProtectedRoute>} />
-        <Route path="/app/meus-pets/:id" element={<ProtectedRoute allowedRoles={['CIDADAO']}><PetDetalhes /></ProtectedRoute>} />
-        <Route path="/app/filas" element={<ProtectedRoute allowedRoles={['CIDADAO']}><MinhasFilas /></ProtectedRoute>} />
-        <Route path="/app/filas/castracao" element={<ProtectedRoute allowedRoles={['CIDADAO']}><InscricaoCastracao /></ProtectedRoute>} />
-        <Route path="/app/filas/consulta" element={<ProtectedRoute allowedRoles={['CIDADAO']}><SolicitarConsulta /></ProtectedRoute>} />
-        <Route path="/app/denuncias" element={<ProtectedRoute allowedRoles={['CIDADAO']}><MinhasDenuncias /></ProtectedRoute>} />
+        <Route path="/app/dashboard" element={<ProtectedRoute allowedRoles={['cidadao']}><MeusPets /></ProtectedRoute>} />
+        <Route path="/app/meus-pets" element={<ProtectedRoute allowedRoles={['cidadao']}><MeusPets /></ProtectedRoute>} />
+        <Route path="/app/meus-pets/novo" element={<ProtectedRoute allowedRoles={['cidadao']}><NovoPet /></ProtectedRoute>} />
+        <Route path="/app/meus-pets/:id" element={<ProtectedRoute allowedRoles={['cidadao']}><PetDetalhes /></ProtectedRoute>} />
+        <Route path="/app/filas" element={<ProtectedRoute allowedRoles={['cidadao']}><MinhasFilas /></ProtectedRoute>} />
+        <Route path="/app/filas/castracao" element={<ProtectedRoute allowedRoles={['cidadao']}><InscricaoCastracao /></ProtectedRoute>} />
+        <Route path="/app/filas/consulta" element={<ProtectedRoute allowedRoles={['cidadao']}><SolicitarConsulta /></ProtectedRoute>} />
+        <Route path="/app/denuncias" element={<ProtectedRoute allowedRoles={['cidadao']}><MinhasDenuncias /></ProtectedRoute>} />
         <Route path="/app/perfil" element={<ProtectedRoute><MeuPerfil /></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Route>
 
       {/* Rotas Administrativas (ONGs, Prefeituras, Vets) */}
-      <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN_MUNICIPIO', 'MEMBRO_ONG', 'VETERINARIO']}><AdminLayout /></ProtectedRoute>}>
+      <Route element={<ProtectedRoute allowedRoles={['admin_prefeitura', 'admin_ong', 'veterinario', 'voluntario']}><AdminLayout /></ProtectedRoute>}>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/pets" element={<GestaoPets />} />
         <Route path="/admin/castracao" element={<GestaoFila />} />

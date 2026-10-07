@@ -1,21 +1,53 @@
-import React from 'react';
-import { User, Mail, Phone, MapPin, Camera, Save, Lock, Bell, Trash2 } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { User, Mail, Phone, Camera, Save, Lock, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const MeuPerfil = () => {
-  const { register, handleSubmit } = useForm({
+  const { user, profile, refreshProfile } = useAuth();
+  
+  const { register, handleSubmit, reset } = useForm({
     defaultValues: {
-      nome: 'Usuário Exemplo',
-      email: 'usuario@exemplo.com',
-      telefone: '(41) 99999-9999',
-      cpf: '123.456.789-00',
+      nome: '',
+      email: '',
+      telefone: '',
+      cpf: '',
     }
   });
 
-  const onSubmit = (data: any) => {
-    toast.success('Perfil atualizado com sucesso!');
+  useEffect(() => {
+    if (profile && user) {
+      reset({
+        nome: profile.nome || '',
+        email: user.email || '',
+        telefone: profile.telefone || '',
+        cpf: profile.cpf || '',
+      });
+    }
+  }, [profile, user, reset]);
+
+  const onSubmit = async (data: any) => {
+    try {
+      const { error } = await supabase
+        .from('perfis')
+        .update({
+          nome: data.nome,
+          telefone: data.telefone,
+        })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+      
+      await refreshProfile();
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error: any) {
+      toast.error('Erro ao atualizar perfil: ' + error.message);
+    }
   };
+
+  const initiais = profile?.nome ? profile.nome.substring(0, 2).toUpperCase() : 'UE';
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
@@ -29,16 +61,16 @@ const MeuPerfil = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8 pb-8 border-b border-gray-100">
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-3xl font-bold">
-                UE
+                {initiais}
               </div>
               <button className="absolute bottom-0 right-0 p-2 bg-white rounded-full border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors">
                 <Camera className="w-4 h-4 text-gray-600" />
               </button>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Usuário Exemplo</h2>
+              <h2 className="text-xl font-bold text-gray-900">{profile?.nome || 'Usuário'}</h2>
               <p className="text-gray-500 flex items-center mt-1">
-                <Mail className="w-4 h-4 mr-2" /> usuario@exemplo.com
+                <Mail className="w-4 h-4 mr-2" /> {user?.email}
               </p>
             </div>
           </div>
