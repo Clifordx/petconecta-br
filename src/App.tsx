@@ -48,8 +48,18 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   if (!user && import.meta.env.VITE_SUPABASE_URL) {
     return <Navigate to="/login" replace />;
   }
-  if (allowedRoles && profile && !allowedRoles.includes(profile.tipo_perfil)) {
-    return <Navigate to="/" replace />;
+
+  // If a role is required, we MUST have a profile AND the profile must match
+  if (allowedRoles && allowedRoles.length > 0) {
+    if (!profile) {
+      // If we are logged in but have no profile yet, only allow if 'cidadao' is an allowed role
+      if (!allowedRoles.includes('cidadao')) {
+        return <Navigate to="/" replace />;
+      }
+    } else if (!allowedRoles.includes(profile.tipo_perfil)) {
+      // Profile exists but doesn't have the required role
+      return <Navigate to="/" replace />;
+    }
   }
   
   return <>{children}</>;
