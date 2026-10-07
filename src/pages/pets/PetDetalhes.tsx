@@ -28,10 +28,40 @@ const PetDetalhes = () => {
   const navigate = useNavigate();
   const [pet, setPet] = useState<Pet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({ observacoes: '', castrado: false, vacinado: false, cor: '', porte: '', sexo: '' });
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
 
   
+  
+  const handleSave = async () => {
+    if (!pet) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('pets').update({
+        observacoes: editForm.observacoes,
+        castrado: editForm.castrado,
+        vacinado: editForm.vacinado,
+        cor: editForm.cor,
+        porte: editForm.porte,
+        sexo: editForm.sexo
+      }).eq('id', pet.id);
+      
+      if (error) throw error;
+      
+      setPet({ ...pet, ...editForm });
+      setIsEditing(false);
+      toast.success('Pet atualizado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao atualizar pet.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
   const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !user || !pet) return;
     
@@ -96,7 +126,7 @@ const PetDetalhes = () => {
       
       // Refresh pet data
       const { data } = await supabase.from('pets').select('*, fotos_pet(url)').order('criado_em', { referencedTable: 'fotos_pet', ascending: false }).eq('id', pet.id).single();
-      if (data) setPet(data);
+      if (data) { setPet(data); setEditForm({ observacoes: data.observacoes || '', castrado: data.castrado || false, vacinado: data.vacinado || false, cor: data.cor || '', porte: data.porte || '', sexo: data.sexo || '' }); }
 
     } catch (error) {
       console.error('Erro ao subir foto:', error);
@@ -146,9 +176,20 @@ const PetDetalhes = () => {
           </button>
           <h1 className="text-2xl font-bold text-gray-900">Perfil do Pet</h1>
         </div>
-        <button className="flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-md transition-colors opacity-50 cursor-not-allowed" title="Em breve">
-          <Edit className="w-4 h-4 mr-1.5" /> Editar
-        </button>
+        {!isEditing ? (
+          <button onClick={() => setIsEditing(true)} className="flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-md transition-colors">
+            <Edit className="w-4 h-4 mr-1.5" /> Editar
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <button onClick={() => setIsEditing(false)} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 px-3 py-1.5 rounded-md transition-colors">
+              Cancelar
+            </button>
+            <button onClick={handleSave} disabled={isSaving} className="flex items-center text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50">
+              {isSaving ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
