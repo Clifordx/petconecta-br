@@ -69,7 +69,7 @@ const PetDetalhes = () => {
     setIsUploading(true);
     
     try {
-      toast.info('Recortando foto com IA...', { duration: 4000 });
+      toast.info('Criando foto de estúdio com IA...', { duration: 4000 });
       
       // Remove BG
       const transparentBlob = await removeBackground(file);
