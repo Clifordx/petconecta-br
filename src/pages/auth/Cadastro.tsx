@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { validateDocumentWithAI } from '@/lib/gemini';
 import { ArrowLeft, ArrowRight, Dog, Loader2, Check, FileText, Camera } from 'lucide-react';
 import clsx from 'clsx';
 
