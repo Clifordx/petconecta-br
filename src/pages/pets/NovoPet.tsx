@@ -70,9 +70,7 @@ const NovoPet = () => {
             canvas.width = img.width;
             canvas.height = img.height;
             const ctx = canvas.getContext('2d');
-            if (!ctx) return reject('Context error');
-            
-            // Draw professional gradient background
+            if (!ctx) return reject('Context error');          // Draw professional gradient background
           const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
           gradient.addColorStop(0, '#ffffff');
           gradient.addColorStop(1, '#f1f5f9'); // slate-100
@@ -92,15 +90,20 @@ const NovoPet = () => {
           ctx.shadowBlur = 0;
           ctx.shadowOffsetY = 0;
           
-          // Draw PetConecta BR watermark at bottom right
-          const fontSize = Math.max(16, canvas.height * 0.025);
-          ctx.fillStyle = '#64748b'; // slate-500
+          // Draw PetConecta BR Banner at bottom
+          const fontSize = Math.max(24, canvas.height * 0.04);
+          const bannerHeight = fontSize * 2.5;
+          
+          // Draw banner background at bottom
+          ctx.fillStyle = '#059669'; // emerald-600
+          ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
+          
+          // Draw text
+          ctx.fillStyle = '#ffffff';
           ctx.font = `bold ${fontSize}px sans-serif`;
-          ctx.textAlign = 'right';
-          // Draw a small background for the watermark for readability
-          const text = '🐾 PetConecta BR';
-          const padding = fontSize * 0.8;
-          ctx.fillText(text, canvas.width - padding, canvas.height - padding);
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🐾 PetConecta BR', canvas.width / 2, canvas.height - (bannerHeight / 2));
             
             canvas.toBlob((blob) => {
               if (!blob) return reject('Blob error');
