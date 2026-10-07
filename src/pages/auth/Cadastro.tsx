@@ -101,10 +101,30 @@ const Cadastro = () => {
 
       if (authError) throw authError;
 
-      // In real app we'd save to 'perfis' table here
+      if (authData.user) {
+        const { error: profileError } = await supabase.from('perfis').insert({
+          id: authData.user.id,
+          nome: data.nome,
+          cpf: data.cpf,
+          rg: data.rg || null,
+          data_nascimento: data.dataNascimento,
+          telefone: data.telefone,
+          endereco: data.endereco,
+          numero: data.numero,
+          complemento: data.complemento || null,
+          bairro: data.bairro,
+          cep: data.cep,
+          tipo_perfil: 'cidadao'
+        });
+
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError);
+          // Don't throw here, the auth account was created
+        }
+      }
       
-      toast.success('Conta criada com sucesso!');
-      navigate('/app/dashboard');
+      toast.success('Conta criada com sucesso! Verifique seu e-mail para confirmar (ou faça login diretamente se configurado sem confirmação).');
+      navigate('/login');
     } catch (error: any) {
       toast.error('Erro ao criar conta: ' + error.message);
     } finally {

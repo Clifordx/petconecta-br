@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Stethoscope, AlertTriangle, Home, Calendar, CreditCard, Shield, Dog, Cat, ArrowRight } from 'lucide-react';
 
@@ -15,20 +15,6 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: str
 const Landing = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Navbar */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-emerald-600">
-            <Dog className="h-8 w-8" />
-            <span className="text-2xl font-bold tracking-tight">PetConecta BR</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/login" className="text-gray-600 hover:text-emerald-600 font-medium hidden sm:block">Entrar</Link>
-            <Link to="/cadastro" className="bg-emerald-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-emerald-700 transition-colors">Cadastre-se</Link>
-          </div>
-        </div>
-      </header>
-
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50 to-white pt-16 pb-24 sm:pt-24 sm:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
