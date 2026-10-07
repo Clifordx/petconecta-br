@@ -84,9 +84,35 @@ const PetDetalhes = () => {
           const ctx = canvas.getContext('2d');
           if (!ctx) return reject('Context error');
           
-          ctx.fillStyle = '#FFFFFF';
+                    // Draw professional gradient background
+          const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          gradient.addColorStop(0, '#ffffff');
+          gradient.addColorStop(1, '#f1f5f9'); // slate-100
+          ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Add drop shadow for the pet to give a studio effect
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+          ctx.shadowBlur = 40;
+          ctx.shadowOffsetY = 20;
+          
+          // Draw Transparent Image
           ctx.drawImage(img, 0, 0);
+          
+          // Reset shadow for text
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+          
+          // Draw PetConecta BR watermark at bottom right
+          const fontSize = Math.max(16, canvas.height * 0.025);
+          ctx.fillStyle = '#64748b'; // slate-500
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.textAlign = 'right';
+          // Draw a small background for the watermark for readability
+          const text = '🐾 PetConecta BR';
+          const padding = fontSize * 0.8;
+          ctx.fillText(text, canvas.width - padding, canvas.height - padding);
           
           canvas.toBlob((blob) => {
             if (!blob) return reject('Blob error');
