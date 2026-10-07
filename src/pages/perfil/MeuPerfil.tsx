@@ -30,13 +30,17 @@ const MeuPerfil = () => {
 
   const onSubmit = async (data: any) => {
     try {
+      if (!user) throw new Error('Usuário não autenticado');
+      
       const { error } = await supabase
         .from('perfis')
-        .update({
+        .upsert({
+          id: user.id,
           nome: data.nome,
           telefone: data.telefone,
-        })
-        .eq('id', user?.id);
+          cpf: profile?.cpf || data.cpf || null, // Keep existing CPF if any
+          tipo_perfil: profile?.tipo_perfil || 'cidadao' // Ensure they get at least cidadao
+        }, { onConflict: 'id' });
 
       if (error) throw error;
       
@@ -100,7 +104,7 @@ const MeuPerfil = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
                 <div className="relative">
-                  <input type="text" {...register('cpf')} disabled className="w-full border-gray-200 bg-gray-50 text-gray-500 rounded-lg shadow-sm px-3" />
+                  <input type="text" {...register('cpf')} disabled={!!profile?.cpf} className="w-full border-gray-300 rounded-lg shadow-sm px-3 py-2 disabled:bg-gray-50 disabled:text-gray-500" />
                 </div>
               </div>
 
