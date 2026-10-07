@@ -30,7 +30,7 @@ export interface Perfil {
   numero?: string;
   complemento?: string;
   municipio_id?: string;
-  papel: 'CIDADAO' | 'ADMIN_MUNICIPIO' | 'MEMBRO_ONG' | 'VETERINARIO' | 'SUPER_ADMIN';
+  tipo_perfil: 'cidadao' | 'admin_prefeitura' | 'admin_ong' | 'veterinario' | 'super_admin';
   organizacao_id?: string;
   created_at: string;
   updated_at: string;

@@ -48,7 +48,7 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode,
   if (!user && import.meta.env.VITE_SUPABASE_URL) {
     return <Navigate to="/login" replace />;
   }
-  if (allowedRoles && profile && !allowedRoles.includes(profile.papel)) {
+  if (allowedRoles && profile && !allowedRoles.includes(profile.tipo_perfil)) {
     return <Navigate to="/" replace />;
   }
   

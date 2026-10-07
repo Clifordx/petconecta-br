@@ -24,7 +24,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { profile, organization } = useAuth();
   const location = useLocation();
 
-  const isAdmin = profile?.papel === 'SUPER_ADMIN' || profile?.papel === 'ADMIN_MUNICIPIO';
+  const isAdmin = profile?.tipo_perfil === 'super_admin' || profile?.tipo_perfil === 'admin_prefeitura';
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -39,11 +39,11 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   ];
 
   const roleLabels: Record<string, string> = {
-    'SUPER_ADMIN': 'Super Admin',
-    'ADMIN_MUNICIPIO': 'Admin Município',
-    'MEMBRO_ONG': 'Membro ONG',
-    'VETERINARIO': 'Veterinário',
-    'CIDADAO': 'Cidadão',
+    'super_admin': 'Super Admin',
+    'admin_prefeitura': 'Admin Município',
+    'admin_ong': 'Membro ONG',
+    'veterinario': 'Veterinário',
+    'cidadao': 'Cidadão',
   };
 
   return (
@@ -68,7 +68,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </div>
           <div className="mt-2 flex gap-2">
             <Badge variant="primary" className="text-xs">
-              {profile?.papel ? roleLabels[profile.papel] : ''}
+              {profile?.tipo_perfil ? roleLabels[profile.tipo_perfil] : ''}
             </Badge>
           </div>
         </div>
