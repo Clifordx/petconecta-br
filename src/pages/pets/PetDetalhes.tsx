@@ -160,7 +160,7 @@ const PetDetalhes = () => {
               <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                 {pet.fotos_pet && pet.fotos_pet.length > 0 ? (
                 <>
-                  <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-cover" />
+                  <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-contain p-2" />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-white font-medium">Alterar Foto</span>
                   </div>
