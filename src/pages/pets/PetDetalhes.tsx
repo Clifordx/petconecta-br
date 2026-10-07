@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import imglyRemoveBackground from '@imgly/background-removal';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 type Pet = {
@@ -26,6 +28,77 @@ const PetDetalhes = () => {
   const navigate = useNavigate();
   const [pet, setPet] = useState<Pet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const { user } = useAuth();
+
+  
+  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !user || !pet) return;
+    
+    const file = e.target.files[0];
+    setIsUploading(true);
+    
+    try {
+      toast.info('Recortando foto com IA...', { duration: 4000 });
+      
+      // Remove BG
+      const transparentBlob = await imglyRemoveBackground(file);
+      
+      // Draw on white background
+      const processedFile = await new Promise<File>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('Context error');
+          
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+          
+          canvas.toBlob((blob) => {
+            if (!blob) return reject('Blob error');
+            const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg' });
+            resolve(newFile);
+          }, 'image/jpeg', 0.9);
+        };
+        img.src = URL.createObjectURL(transparentBlob);
+      });
+
+      // Upload to Supabase
+      const fileName = `${pet.id}-${Math.random()}.jpg`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('pets')
+        .upload(filePath, processedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage.from('pets').getPublicUrl(filePath);
+
+      // Insert into fotos_pet
+      await supabase.from('fotos_pet').insert({
+        pet_id: pet.id,
+        url: publicUrlData.publicUrl,
+        is_principal: true
+      });
+
+      toast.success('Foto adicionada com sucesso!');
+      
+      // Refresh pet data
+      const { data } = await supabase.from('pets').select('*, fotos_pet(url)').eq('id', pet.id).single();
+      if (data) setPet(data);
+
+    } catch (error) {
+      console.error('Erro ao subir foto:', error);
+      toast.error('Erro ao enviar a foto.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchPet = async () => {
@@ -76,18 +149,29 @@ const PetDetalhes = () => {
         {/* Sidebar Info */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="h-64 bg-gray-100 relative group cursor-pointer hover:bg-gray-200 transition-colors">
+            <label className="h-64 bg-gray-100 relative group cursor-pointer hover:bg-gray-200 transition-colors block overflow-hidden">
+              <input type="file" className="hidden" accept="image/*" onChange={handleFotoUpload} disabled={isUploading} />
               <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                 {pet.fotos_pet && pet.fotos_pet.length > 0 ? (
                 <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-white font-medium">Alterar Foto</span>
+                </div>
               ) : (
                 <>
                   {pet.especie === 'gato' ? <Cat className="w-16 h-16 mb-2" /> : <Dog className="w-16 h-16 mb-2" />}
                   <span className="text-sm font-medium">Sem foto</span>
+                  <span className="text-xs text-gray-500 mt-1">Clique para adicionar</span>
                 </>
               )}
               </div>
-            </div>
+                          {isUploading && (
+                <div className="absolute inset-0 bg-white/70 flex flex-col items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-emerald-600 animate-spin mb-2" />
+                  <span className="text-sm font-medium text-emerald-800">Processando Foto...</span>
+                </div>
+              )}
+            </label>
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
