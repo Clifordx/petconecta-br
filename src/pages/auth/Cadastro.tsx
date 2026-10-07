@@ -149,7 +149,7 @@ const Cadastro = () => {
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200">
                 <div className="h-full bg-emerald-600 transition-all duration-300" style={{ width: `${((step - 1) / 3) * 100}%` }} />
               </div>
-              {[1, 2, 3].map((num) => (
+              {[1, 2, 3, 4].map((num) => (
                 <div key={num} className={clsx("relative z-10 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-colors", step >= num ? "bg-emerald-600 text-white" : "bg-gray-200 text-gray-500")}>
                   {step > num ? <Check className="w-5 h-5" /> : num}
                 </div>
@@ -159,6 +159,7 @@ const Cadastro = () => {
               <span>Conta</span>
               <span>Dados Pessoais</span>
               <span>Endereço</span>
+              <span>Segurança</span>
             </div>
           </div>
 
@@ -214,7 +215,7 @@ const Cadastro = () => {
               </div>
             )}
 
-            {step === 3 || step === 4 && (
+                        {step === 3 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">CEP</label>
@@ -252,7 +253,50 @@ const Cadastro = () => {
               </div>
             )}
 
-            <div className="mt-8 flex justify-between">
+            {step === 4 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100 mb-4">
+                  <h3 className="text-emerald-800 font-bold flex items-center mb-2">
+                    <Check className="w-5 h-5 mr-2" /> Segurança e Verificação
+                  </h3>
+                  <p className="text-sm text-emerald-700">Para garantir a segurança dos animais, precisamos confirmar sua identidade e manter seu perfil completo.</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Sua Foto de Perfil (Rosto visível)</label>
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Camera className="w-8 h-8 text-gray-400 mb-2" />
+                      {profileFile ? (
+                        <p className="text-sm text-emerald-600 font-semibold">{profileFile.name}</p>
+                      ) : (
+                        <p className="text-sm text-gray-500">Clique para enviar foto de perfil</p>
+                      )}
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files) setProfileFile(e.target.files[0]) }} />
+                  </label>
+                  {!profileFile && <p className="text-red-500 text-xs mt-1">Obrigatório enviar uma foto de perfil.</p>}
+                </div>
+
+                <div className="pt-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Foto da sua CNH, RG ou CPF</label>
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <FileText className="w-8 h-8 text-gray-400 mb-2" />
+                      {docFile ? (
+                        <p className="text-sm text-emerald-600 font-semibold">{docFile.name}</p>
+                      ) : (
+                        <p className="text-sm text-gray-500">Clique para enviar foto do documento</p>
+                      )}
+                    </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => { if(e.target.files) setDocFile(e.target.files[0]) }} />
+                  </label>
+                  {!docFile && <p className="text-red-500 text-xs mt-1">Obrigatório enviar um documento de identificação.</p>}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-8 flex justify-between"><div className="mt-8 flex justify-between">
               {step > 1 ? (
                 <button type="button" onClick={prevStep} className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                   <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
