@@ -29,6 +29,9 @@ export interface Perfil {
   bairro?: string;
   numero?: string;
   complemento?: string;
+    cep?: string;
+    avatar_url?: string;
+    documento_url?: string;
   municipio_id?: string;
   tipo_perfil: 'cidadao' | 'admin_prefeitura' | 'admin_ong' | 'veterinario' | 'super_admin';
   organizacao_id?: string;
