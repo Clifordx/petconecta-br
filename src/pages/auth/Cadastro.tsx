@@ -48,6 +48,7 @@ const Cadastro = () => {
     let fieldsToValidate: any[] = [];
     if (step === 1) fieldsToValidate = ['email', 'password', 'confirmPassword'];
     if (step === 2) fieldsToValidate = ['nome', 'cpf', 'rg', 'dataNascimento', 'telefone'];
+    if (step === 3) fieldsToValidate = ['cep', 'endereco', 'numero', 'bairro'];
     
     const isValid = await trigger(fieldsToValidate);
     if (isValid) setStep(s => s + 1);
