@@ -1,4 +1,4 @@
-ï»¿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form'; // Make sure it's react-hook-form
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,23 +10,23 @@ import clsx from 'clsx';
 
 // Real world CPF valdiation would go here
 const cadastroSchema = z.object({
-  email: z.string().email('Email invÃ¡lido'),
-  password: z.string().min(6, 'Senha deve ter no mÃ­nimo 6 caracteres'),
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres'),
   confirmPassword: z.string(),
   nome: z.string().min(3, 'Nome muito curto'),
-  cpf: z.string().min(14, 'CPF invÃ¡lido'),
-  rg: z.string().min(1, 'RG obrigatÃ³rio'),
-  dataNascimento: z.string().min(1, 'Data obrigatÃ³ria'),
-  telefone: z.string().min(14, 'Telefone invÃ¡lido'),
-  cep: z.string().min(8, 'CEP invÃ¡lido'),
-  endereco: z.string().min(1, 'EndereÃ§o obrigatÃ³rio'),
-  numero: z.string().min(1, 'NÃºmero obrigatÃ³rio'),
+  cpf: z.string().min(11, 'CPF inválido'),
+  rg: z.string().min(1, 'RG obrigatório'),
+  dataNascimento: z.string().min(1, 'Data obrigatória'),
+  telefone: z.string().min(11, 'Telefone inválido'),
+  cep: z.string().min(8, 'CEP inválido'),
+  endereco: z.string().min(1, 'Endereço obrigatório'),
+  numero: z.string().min(1, 'Número obrigatório'),
   complemento: z.string().optional(),
-  bairro: z.string().min(1, 'Bairro obrigatÃ³rio'),
-  cidade: z.string().min(1, 'Cidade obrigatÃ³ria'),
-  estado: z.string().min(2, 'Estado obrigatÃ³rio'),
+  bairro: z.string().min(1, 'Bairro obrigatório'),
+  cidade: z.string().min(1, 'Cidade obrigatória'),
+  estado: z.string().min(2, 'Estado obrigatório'),
 }).refine(data => data.password === data.confirmPassword, {
-  message: "As senhas nÃ£o coincidem",
+  message: "As senhas não coincidem",
   path: ["confirmPassword"],
 });
 
@@ -119,7 +119,7 @@ const Cadastro = () => {
             <div className="flex justify-between mt-2 text-xs text-gray-500">
               <span>Conta</span>
               <span>Dados Pessoais</span>
-              <span>EndereÃ§o</span>
+              <span>Endereço</span>
             </div>
           </div>
 
@@ -183,12 +183,12 @@ const Cadastro = () => {
                   {errors.cep && <p className="text-red-500 text-xs mt-1">{errors.cep.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">EndereÃ§o</label>
+                  <label className="block text-sm font-medium text-gray-700">Endereço</label>
                   <input type="text" {...register('endereco')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">NÃºmero</label>
+                    <label className="block text-sm font-medium text-gray-700">Número</label>
                     <input type="text" {...register('numero')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
                   </div>
                   <div>
@@ -224,7 +224,7 @@ const Cadastro = () => {
               
               {step < 3 ? (
                 <button type="button" onClick={nextStep} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  PrÃ³ximo <ArrowRight className="w-4 h-4 ml-2" />
+                  Próximo <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
               ) : (
                 <button type="submit" disabled={isLoading} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50">
@@ -236,7 +236,7 @@ const Cadastro = () => {
           </form>
           
           <div className="mt-6 text-center text-sm">
-            JÃ¡ tem uma conta? <Link to="/login" className="text-emerald-600 font-medium">FaÃ§a login</Link>
+            Já tem uma conta? <Link to="/login" className="text-emerald-600 font-medium">Faça login</Link>
           </div>
         </div>
       </div>
