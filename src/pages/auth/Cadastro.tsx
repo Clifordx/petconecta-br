@@ -36,6 +36,7 @@ const Cadastro = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [docFile, setDocFile] = useState<File | null>(null);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue, trigger } = useForm<CadastroForm>({
     resolver: zodResolver(cadastroSchema),
@@ -92,6 +93,10 @@ const Cadastro = () => {
   };
 
     const onSubmit = async (data: CadastroForm) => {
+      if (step === 4 && !docFile) {
+        toast.error('Por favor, envie a foto do seu documento.');
+        return;
+      }
     setIsLoading(true);
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -208,7 +213,7 @@ const Cadastro = () => {
               </div>
             )}
 
-            {step === 3 && (
+            {step === 3 || step === 4 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">CEP</label>
@@ -255,7 +260,7 @@ const Cadastro = () => {
                 <div />
               )}
               
-              {step < 3 ? (
+              {step < 4 ? (
                 <button type="button" onClick={nextStep} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
                   Próximo <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
