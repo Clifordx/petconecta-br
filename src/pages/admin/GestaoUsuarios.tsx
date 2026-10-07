@@ -193,7 +193,7 @@ export default function GestaoUsuarios() {
                   <p className="text-sm text-gray-500 font-medium">Endereço Completo</p>
                   <p className="text-gray-900 flex items-start mt-1">
                     <MapPin className="w-4 h-4 text-emerald-600 mr-1 mt-0.5" />
-                    {selectedUser.endereco}, {selectedUser.numero} {selectedUser.complemento && \` - \${selectedUser.complemento}\`}
+                    {selectedUser.endereco}, {selectedUser.numero} {selectedUser.complemento && ` - ${selectedUser.complemento}`}
                     <br />
                     {selectedUser.bairro} - CEP: {selectedUser.cep}
                   </p>
