@@ -71,7 +71,7 @@ export function Header() {
                 {isUserMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <Link
-                      to={profile?.tipo_perfil === 'cidadao' ? '/app/dashboard' : '/admin/dashboard'}
+                      to={(!profile || profile.tipo_perfil === 'cidadao') ? '/app/dashboard' : '/admin/dashboard'}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
@@ -156,7 +156,7 @@ export function Header() {
                   </div>
                 </div>
                 <Link
-                  to={profile?.tipo_perfil === 'cidadao' ? '/app/dashboard' : '/admin/dashboard'}
+                  to={(!profile || profile.tipo_perfil === 'cidadao') ? '/app/dashboard' : '/admin/dashboard'}
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
