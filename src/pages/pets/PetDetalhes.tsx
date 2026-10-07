@@ -77,19 +77,25 @@ const PetDetalhes = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: publicUrlData } = supabase.storage.from('pets').getPublicUrl(filePath);
+            const { data: publicUrlData } = supabase.storage.from('pets').getPublicUrl(filePath);
+
+      // Remove fotos antigas do banco para manter apenas a nova
+      await supabase.from('fotos_pet').delete().eq('pet_id', pet.id);
 
       // Insert into fotos_pet
       await supabase.from('fotos_pet').insert({
         pet_id: pet.id,
-        url: publicUrlData.publicUrl,
+        url: publicUrlData.publicUrl + '?t=' + Date.now(),
         is_principal: true
       });
+
+      // Limpa o input para permitir selecionar a mesma foto novamente
+      e.target.value = '';
 
       toast.success('Foto adicionada com sucesso!');
       
       // Refresh pet data
-      const { data } = await supabase.from('pets').select('*, fotos_pet(url)').eq('id', pet.id).single();
+      const { data } = await supabase.from('pets').select('*, fotos_pet(url)').order('criado_em', { referencedTable: 'fotos_pet', ascending: false }).eq('id', pet.id).single();
       if (data) setPet(data);
 
     } catch (error) {
@@ -104,7 +110,7 @@ const PetDetalhes = () => {
     const fetchPet = async () => {
       try {
         const { data, error } = await supabase
-          .from('pets').select('*, fotos_pet(url)')
+          .from('pets').select('*, fotos_pet(url)').order('criado_em', { referencedTable: 'fotos_pet', ascending: false })
           .eq('id', id)
           .single();
         
