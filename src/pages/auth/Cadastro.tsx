@@ -1,267 +1,268 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form'; // Make sure it's react-hook-form
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import { ArrowLeft, ArrowRight, Dog, Loader2, Check } from 'lucide-react';
-import clsx from 'clsx';
-
-// Real world CPF valdiation would go here
-const cadastroSchema = z.object({
-  email: z.string().email('Email inv�lido'),
-  password: z.string().min(6, 'Senha deve ter no m�nimo 6 caracteres'),
-  confirmPassword: z.string(),
-  nome: z.string().min(3, 'Nome muito curto'),
-  cpf: z.string().min(11, 'CPF inv�lido'),
-  rg: z.string().optional(),
-  dataNascimento: z.string().min(1, 'Data obrigat�ria'),
-  telefone: z.string().min(11, 'Telefone inv�lido'),
-  cep: z.string().min(8, 'CEP inv�lido'),
-  endereco: z.string().min(1, 'Endere�o obrigat�rio'),
-  numero: z.string().min(1, 'N�mero obrigat�rio'),
-  complemento: z.string().optional(),
-  bairro: z.string().min(1, 'Bairro obrigat�rio'),
-  cidade: z.string().min(1, 'Cidade obrigat�ria'),
-  estado: z.string().min(2, 'Estado obrigat�rio'),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "As senhas n�o coincidem",
-  path: ["confirmPassword"],
-});
-
-type CadastroForm = z.infer<typeof cadastroSchema>;
-
-const Cadastro = () => {
-  const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { register, handleSubmit, formState: { errors }, watch, setValue, trigger } = useForm<CadastroForm>({
-    resolver: zodResolver(cadastroSchema),
-    mode: 'onTouched'
-  });
-
-  const nextStep = async () => {
-    let fieldsToValidate: any[] = [];
-    if (step === 1) fieldsToValidate = ['email', 'password', 'confirmPassword'];
-    if (step === 2) fieldsToValidate = ['nome', 'cpf', 'rg', 'dataNascimento', 'telefone'];
-    
-    const isValid = await trigger(fieldsToValidate);
-    if (isValid) setStep(s => s + 1);
-  };
-
-  const prevStep = () => setStep(s => s - 1);
-
-  const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const cep = e.target.value.replace(/\D/g, '');
-    if (cep.length === 8) {
-      try {
-        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-        const data = await res.json();
-        if (!data.erro) {
-          setValue('endereco', data.logradouro);
-          setValue('bairro', data.bairro);
-          setValue('cidade', data.localidade);
-          setValue('estado', data.uf);
-        }
-      } catch (err) {
-        toast.error('Erro ao buscar CEP');
-      }
-    }
-  };
-
-  
-  const handleCPFMask = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 11) value = value.slice(0, 11);
-    value = value.replace(/(\d{3})(\d)/, '$1.$2');
-    value = value.replace(/(\d{3})(\d)/, '$1.$2');
-    value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-    e.target.value = value;
-    return value;
-  };
-
-  const handleTelefoneMask = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length > 11) value = value.slice(0, 11);
-    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
-    value = value.replace(/(\d)(\d{4})$/, '$1-$2');
-    e.target.value = value;
-    return value;
-  };
-
-  const onSubmit = async (data: CadastroForm) => {
-    setIsLoading(true);
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-      });
-
-      if (authError) throw authError;
-
-      // In real app we'd save to 'perfis' table here
-      
-      toast.success('Conta criada com sucesso!');
-      navigate('/app/dashboard');
-    } catch (error: any) {
-      toast.error('Erro ao criar conta: ' + error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <Dog className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
-          <h2 className="text-3xl font-extrabold text-gray-900">Crie sua Conta</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Junte-se ao PetConecta BR e ajude a cuidar dos nossos animais
-          </p>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-6 sm:p-10">
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between relative">
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-gray-200">
-                <div className="h-full bg-emerald-600 transition-all duration-300" style={{ width: `${((step - 1) / 2) * 100}%` }} />
-              </div>
-              {[1, 2, 3].map((num) => (
-                <div key={num} className={clsx("relative z-10 w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-colors", step >= num ? "bg-emerald-600 text-white" : "bg-gray-200 text-gray-500")}>
-                  {step > num ? <Check className="w-5 h-5" /> : num}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
-              <span>Conta</span>
-              <span>Dados Pessoais</span>
-              <span>Endere�o</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {step === 1 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input type="email" {...register('email')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Senha</label>
-                  <input type="password" {...register('password')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Confirmar Senha</label>
-                  <input type="password" {...register('confirmPassword')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nome Completo</label>
-                  <input type="text" {...register('nome')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  {errors.nome && <p className="text-red-500 text-xs mt-1">{errors.nome.message}</p>}
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">CPF</label>
-                    <input type="text" {...register('cpf')} onChange={(e) => { register('cpf').onChange(e); handleCPFMask(e); }} placeholder="000.000.000-00" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                    {errors.cpf && <p className="text-red-500 text-xs mt-1">{errors.cpf.message}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">RG</label>
-                    <input type="text" {...register('rg')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Data de Nascimento</label>
-                    <input type="date" {...register('dataNascimento')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Telefone</label>
-                    <input type="text" {...register('telefone')} onChange={(e) => { register('telefone').onChange(e); handleTelefoneMask(e); }} placeholder="(00) 00000-0000" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">CEP</label>
-                  <input type="text" {...register('cep')} onChange={(e) => { register('cep').onChange(e); handleCEPChange(e); }} placeholder="00000-000" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  {errors.cep && <p className="text-red-500 text-xs mt-1">{errors.cep.message}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Endere�o</label>
-                  <input type="text" {...register('endereco')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">N�mero</label>
-                    <input type="text" {...register('numero')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Complemento</label>
-                    <input type="text" {...register('complemento')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700">Bairro</label>
-                    <input type="text" {...register('bairro')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700">Cidade</label>
-                    <input type="text" {...register('cidade')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                  <div className="col-span-1">
-                    <label className="block text-sm font-medium text-gray-700">Estado</label>
-                    <input type="text" {...register('estado')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-8 flex justify-between">
-              {step > 1 ? (
-                <button type="button" onClick={prevStep} className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
-                </button>
-              ) : (
-                <div />
-              )}
-              
-              {step < 3 ? (
-                <button type="button" onClick={nextStep} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  Pr�ximo <ArrowRight className="w-4 h-4 ml-2" />
-                </button>
-              ) : (
-                <button type="submit" disabled={isLoading} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50">
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
-                  Finalizar Cadastro
-                </button>
-              )}
-            </div>
-          </form>
-          
-          <div className="mt-6 text-center text-sm">
-            J� tem uma conta? <Link to="/login" className="text-emerald-600 font-medium">Fa�a login</Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default Cadastro;
+á﻿áiámápáoárátá áRáeáaácátá,á á{á áuásáeáSátáaátáeá á}á áfáráoámá á'áráeáaácátá'á;á
+áiámápáoárátá á{á áuásáeáFáoárámá á}á áfáráoámá á'áráeáaácátá-áháoáoáká-áfáoárámá'á;á á/á/á áMáaákáeá ásáuáráeá áiátá'ásá áráeáaácátá-áháoáoáká-áfáoárámá
+áiámápáoárátá á{á ázá á}á áfáráoámá á'ázáoádá'á;á
+áiámápáoárátá á{á ázáoádáRáeásáoáláváeárá á}á áfáráoámá á'á@áháoáoákáfáoárámá/áráeásáoáláváeárásá/ázáoádá'á;á
+áiámápáoárátá á{á áLáiánáká,á áuásáeáNáaáváiágáaátáeá á}á áfáráoámá á'áráeáaácátá-áráoáuátáeárá-ádáoámá'á;á
+áiámápáoárátá á{á átáoáaásátá á}á áfáráoámá á'ásáoánánáeárá'á;á
+áiámápáoárátá á{á ásáuápáaábáaásáeá á}á áfáráoámá á'á@á/áláiábá/ásáuápáaábáaásáeá'á;á
+áiámápáoárátá á{á áAáráráoáwáLáeáfátá,á áAáráráoáwáRáiágáhátá,á áDáoágá,á áLáoáaádáeárá2á,á áCáháeácáká á}á áfáráoámá á'áláuácáiádáeá-áráeáaácátá'á;á
+áiámápáoárátá ácálásáxá áfáráoámá á'ácálásáxá'á;á
+á
+á/á/á áRáeáaálá áwáoáráládá áCáPáFá áváaáládáiáaátáiáoáná áwáoáuáládá ágáoá áháeáráeá
+ácáoánásátá ácáaádáaásátáráoáSácáháeámáaá á=á ázá.áoábáJááááeácátá(á{á
+á á áeámáaáiálá:á ázá.ásátáráiánágá(á)á.áeámáaáiálá(á'áEámáaáiálá áiánává�áláiádáoá'á)á,á
+á á ápáaásásáwáoárádá:á ázá.ásátáráiánágá(á)á.ámáiáná(á6á,á á'áSáeánáháaá ádáeáváeá átáeárá ánáoá ámá�ánáiámáoá á6á ácáaáráaácátáeáráeásá'á)á,á
+á á ácáoánáfáiárámáPáaásásáwáoárádá:á ázá.ásátáráiánágá(á)á,á
+á á ánáoámáeá:á ázá.ásátáráiánágá(á)á.ámáiáná(á3á,á á'áNáoámáeá ámáuáiátáoá ácáuárátáoá'á)á,á
+á á ácápáfá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á1á,á á'áCáPáFá áiánává�áláiádáoá'á)á,á
+á á árágá:á ázá.ásátáráiánágá(á)á.áoápátáiáoánáaálá(á)á,á
+á á ádáaátáaáNáaásácáiámáeánátáoá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á,á á'áDáaátáaá áoábáráiágáaátá�áráiáaá'á)á,á
+á á átáeáláeáfáoánáeá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á1á,á á'áTáeáláeáfáoánáeá áiánává�áláiádáoá'á)á,á
+á á ácáeápá:á ázá.ásátáráiánágá(á)á.ámáiáná(á8á,á á'áCáEáPá áiánává�áláiádáoá'á)á,á
+á á áeánádáeáráeácáoá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á,á á'áEánádáeáráeá�áoá áoábáráiágáaátá�áráiáoá'á)á,á
+á á ánáuámáeáráoá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á,á á'áNá�ámáeáráoá áoábáráiágáaátá�áráiáoá'á)á,á
+á á ácáoámápáláeámáeánátáoá:á ázá.ásátáráiánágá(á)á.áoápátáiáoánáaálá(á)á,á
+á á ábáaáiáráráoá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á,á á'áBáaáiáráráoá áoábáráiágáaátá�áráiáoá'á)á,á
+á á ácáiádáaádáeá:á ázá.ásátáráiánágá(á)á.ámáiáná(á1á,á á'áCáiádáaádáeá áoábáráiágáaátá�áráiáaá'á)á,á
+á á áeásátáaádáoá:á ázá.ásátáráiánágá(á)á.ámáiáná(á2á,á á'áEásátáaádáoá áoábáráiágáaátá�áráiáoá'á)á,á
+á}á)á.áráeáfáiánáeá(ádáaátáaá á=á>á ádáaátáaá.ápáaásásáwáoárádá á=á=á=á ádáaátáaá.ácáoánáfáiárámáPáaásásáwáoárádá,á á{á
+á á ámáeásásáaágáeá:á á"áAásá ásáeánáháaásá áná�áoá ácáoáiánácáiádáeámá"á,á
+á á ápáaátáhá:á á[á"ácáoánáfáiárámáPáaásásáwáoárádá"á]á,á
+á}á)á;á
+á
+átáyápáeá áCáaádáaásátáráoáFáoárámá á=á ázá.áiánáfáeárá<átáyápáeáoáfá ácáaádáaásátáráoáSácáháeámáaá>á;á
+á
+ácáoánásátá áCáaádáaásátáráoá á=á á(á)á á=á>á á{á
+á á ácáoánásátá ánáaáváiágáaátáeá á=á áuásáeáNáaáváiágáaátáeá(á)á;á
+á á ácáoánásátá á[ásátáeápá,á ásáeátáSátáeápá]á á=á áuásáeáSátáaátáeá(á1á)á;á
+á á ácáoánásátá á[áiásáLáoáaádáiánágá,á ásáeátáIásáLáoáaádáiánágá]á á=á áuásáeáSátáaátáeá(áfáaálásáeá)á;á
+á
+á á ácáoánásátá á{á áráeágáiásátáeárá,á áháaánádáláeáSáuábámáiátá,á áfáoárámáSátáaátáeá:á á{á áeáráráoárásá á}á,á áwáaátácáhá,á ásáeátáVáaáláuáeá,á átáráiágágáeárá á}á á=á áuásáeáFáoárámá<áCáaádáaásátáráoáFáoárámá>á(á{á
+á á á á áráeásáoáláváeárá:á ázáoádáRáeásáoáláváeárá(ácáaádáaásátáráoáSácáháeámáaá)á,á
+á á á á ámáoádáeá:á á'áoánáTáoáuácáháeádá'á
+á á á}á)á;á
+á
+á á ácáoánásátá ánáeáxátáSátáeápá á=á áaásáyánácá á(á)á á=á>á á{á
+á á á á áláeátá áfáiáeáládásáTáoáVáaáláiádáaátáeá:á áaánáyá[á]á á=á á[á]á;á
+á á á á áiáfá á(ásátáeápá á=á=á=á á1á)á áfáiáeáládásáTáoáVáaáláiádáaátáeá á=á á[á'áeámáaáiálá'á,á á'ápáaásásáwáoárádá'á,á á'ácáoánáfáiárámáPáaásásáwáoárádá'á]á;á
+á á á á áiáfá á(ásátáeápá á=á=á=á á2á)á áfáiáeáládásáTáoáVáaáláiádáaátáeá á=á á[á'ánáoámáeá'á,á á'ácápáfá'á,á á'árágá'á,á á'ádáaátáaáNáaásácáiámáeánátáoá'á,á á'átáeáláeáfáoánáeá'á]á;á
+á á á á á
+á á á á ácáoánásátá áiásáVáaáláiádá á=á áaáwáaáiátá átáráiágágáeárá(áfáiáeáládásáTáoáVáaáláiádáaátáeá)á;á
+á á á á áiáfá á(áiásáVáaáláiádá)á ásáeátáSátáeápá(ásá á=á>á ásá á+á á1á)á;á
+á á á}á;á
+á
+á á ácáoánásátá ápáráeáváSátáeápá á=á á(á)á á=á>á ásáeátáSátáeápá(ásá á=á>á ásá á-á á1á)á;á
+á
+á á ácáoánásátá áháaánádáláeáCáEáPáCáháaánágáeá á=á áaásáyánácá á(áeá:á áRáeáaácátá.áCáháaánágáeáEáváeánátá<áHáTáMáLáIánápáuátáEáláeámáeánátá>á)á á=á>á á{á
+á á á á ácáoánásátá ácáeápá á=á áeá.átáaárágáeátá.áváaáláuáeá.áráeápáláaácáeá(á/á\áDá/ágá,á á'á'á)á;á
+á á á á áiáfá á(ácáeápá.áláeánágátáhá á=á=á=á á8á)á á{á
+á á á á á á átáráyá á{á
+á á á á á á á á ácáoánásátá áráeásá á=á áaáwáaáiátá áfáeátácáhá(á`áhátátápásá:á/á/áváiáaácáeápá.ácáoámá.ábárá/áwásá/á$á{ácáeápá}á/áJáááásáoáná/á`á)á;á
+á á á á á á á á ácáoánásátá ádáaátáaá á=á áaáwáaáiátá áráeásá.áJáááásáoáná(á)á;á
+á á á á á á á á áiáfá á(á!ádáaátáaá.áeáráráoá)á á{á
+á á á á á á á á á á ásáeátáVáaáláuáeá(á'áeánádáeáráeácáoá'á,á ádáaátáaá.áláoágáráaádáoáuáráoá)á;á
+á á á á á á á á á á ásáeátáVáaáláuáeá(á'ábáaáiáráráoá'á,á ádáaátáaá.ábáaáiáráráoá)á;á
+á á á á á á á á á á ásáeátáVáaáláuáeá(á'ácáiádáaádáeá'á,á ádáaátáaá.áláoácáaáláiádáaádáeá)á;á
+á á á á á á á á á á ásáeátáVáaáláuáeá(á'áeásátáaádáoá'á,á ádáaátáaá.áuáfá)á;á
+á á á á á á á á á}á
+á á á á á á á}á ácáaátácáhá á(áeárárá)á á{á
+á á á á á á á á átáoáaásátá.áeáráráoárá(á'áEáráráoá áaáoá ábáuásácáaárá áCáEáPá'á)á;á
+á á á á á á á}á
+á á á á á}á
+á á á}á;á
+á
+á á á
+á á ácáoánásátá áháaánádáláeáCáPáFáMáaásáká á=á á(áeá:á áRáeáaácátá.áCáháaánágáeáEáváeánátá<áHáTáMáLáIánápáuátáEáláeámáeánátá>á)á á=á>á á{á
+á á á á áláeátá áváaáláuáeá á=á áeá.átáaárágáeátá.áváaáláuáeá.áráeápáláaácáeá(á/á\áDá/ágá,á á'á'á)á;á
+á á á á áiáfá á(áváaáláuáeá.áláeánágátáhá á>á á1á1á)á áváaáláuáeá á=á áváaáláuáeá.ásáláiácáeá(á0á,á á1á1á)á;á
+á á á á áváaáláuáeá á=á áváaáláuáeá.áráeápáláaácáeá(á/á(á\ádá{á3á}á)á(á\ádá)á/á,á á'á$á1á.á$á2á'á)á;á
+á á á á áváaáláuáeá á=á áváaáláuáeá.áráeápáláaácáeá(á/á(á\ádá{á3á}á)á(á\ádá)á/á,á á'á$á1á.á$á2á'á)á;á
+á á á á áváaáláuáeá á=á áváaáláuáeá.áráeápáláaácáeá(á/á(á\ádá{á3á}á)á(á\ádá{á1á,á2á}á)á$á/á,á á'á$á1á-á$á2á'á)á;á
+á á á á áeá.átáaárágáeátá.áváaáláuáeá á=á áváaáláuáeá;á
+á á á á áráeátáuáráná áváaáláuáeá;á
+á á á}á;á
+á
+á á ácáoánásátá áháaánádáláeáTáeáláeáfáoánáeáMáaásáká á=á á(áeá:á áRáeáaácátá.áCáháaánágáeáEáváeánátá<áHáTáMáLáIánápáuátáEáláeámáeánátá>á)á á=á>á á{á
+á á á á áláeátá áváaáláuáeá á=á áeá.átáaárágáeátá.áváaáláuáeá.áráeápáláaácáeá(á/á\áDá/ágá,á á'á'á)á;á
+á á á á áiáfá á(áváaáláuáeá.áláeánágátáhá á>á á1á1á)á áváaáláuáeá á=á áváaáláuáeá.ásáláiácáeá(á0á,á á1á1á)á;á
+á á á á áváaáláuáeá á=á áváaáláuáeá.áráeápáláaácáeá(á/á^á(á\ádá{á2á}á)á(á\ádá)á/ágá,á á'á(á$á1á)á á$á2á'á)á;á
+á á á á áváaáláuáeá á=á áváaáláuáeá.áráeápáláaácáeá(á/á(á\ádá)á(á\ádá{á4á}á)á$á/á,á á'á$á1á-á$á2á'á)á;á
+á á á á áeá.átáaárágáeátá.áváaáláuáeá á=á áváaáláuáeá;á
+á á á á áráeátáuáráná áváaáláuáeá;á
+á á á}á;á
+á
+á á ácáoánásátá áoánáSáuábámáiátá á=á áaásáyánácá á(ádáaátáaá:á áCáaádáaásátáráoáFáoárámá)á á=á>á á{á
+á á á á ásáeátáIásáLáoáaádáiánágá(átáráuáeá)á;á
+á á á á átáráyá á{á
+á á á á á á ácáoánásátá á{á ádáaátáaá:á áaáuátáháDáaátáaá,á áeáráráoárá:á áaáuátáháEáráráoárá á}á á=á áaáwáaáiátá ásáuápáaábáaásáeá.áaáuátáhá.ásáiágánáUápá(á{á
+á á á á á á á á áeámáaáiálá:á ádáaátáaá.áeámáaáiálá,á
+á á á á á á á á ápáaásásáwáoárádá:á ádáaátáaá.ápáaásásáwáoárádá,á
+á á á á á á á}á)á;á
+á
+á á á á á á áiáfá á(áaáuátáháEáráráoárá)á átáháráoáwá áaáuátáháEáráráoárá;á
+á
+á á á á á á á/á/á áIáná áráeáaálá áaápápá áwáeá'ádá ásáaáváeá átáoá á'ápáeáráfáiásá'á átáaábáláeá áháeáráeá
+á á á á á á á
+á á á á á á átáoáaásátá.ásáuácácáeásásá(á'áCáoánátáaá ácáráiáaádáaá ácáoámá ásáuácáeásásáoá!á'á)á;á
+á á á á á á ánáaáváiágáaátáeá(á'á/áaápápá/ádáaásáhábáoáaárádá'á)á;á
+á á á á á}á ácáaátácáhá á(áeáráráoárá:á áaánáyá)á á{á
+á á á á á á átáoáaásátá.áeáráráoárá(á'áEáráráoá áaáoá ácáráiáaárá ácáoánátáaá:á á'á á+á áeáráráoárá.ámáeásásáaágáeá)á;á
+á á á á á}á áfáiánáaáláláyá á{á
+á á á á á á ásáeátáIásáLáoáaádáiánágá(áfáaálásáeá)á;á
+á á á á á}á
+á á á}á;á
+á
+á á áráeátáuáráná á(á
+á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ámáiáná-áhá-ásácáráeáeáná ábágá-ágáráaáyá-á5á0á ápáyá-á1á2á ápáxá-á4á ásámá:ápáxá-á6á álágá:ápáxá-á8á"á>á
+á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ámáaáxá-áwá-á2áxálá ámáxá-áaáuátáoá"á>á
+á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"átáeáxátá-ácáeánátáeárá ámábá-á8á"á>á
+á á á á á á á á á á á<áDáoágá ácáláaásásáNáaámáeá=á"áhá-á1á2á áwá-á1á2á átáeáxátá-áeámáeáráaáládá-á6á0á0á ámáxá-áaáuátáoá ámábá-á4á"á á/á>á
+á á á á á á á á á á á<áhá2á ácáláaásásáNáaámáeá=á"átáeáxátá-á3áxálá áfáoánátá-áeáxátáráaábáoáládá átáeáxátá-ágáráaáyá-á9á0á0á"á>áCáráiáeá ásáuáaá áCáoánátáaá<á/áhá2á>á
+á á á á á á á á á á á<ápá ácáláaásásáNáaámáeá=á"ámátá-á2á átáeáxátá-ásámá átáeáxátá-ágáráaáyá-á6á0á0á"á>á
+á á á á á á á á á á á á áJááááuánátáeá-ásáeá áaáoá áPáeátáCáoánáeácátáaá áBáRá áeá áaáJááááuádáeá áaá ácáuáiádáaárá ádáoásá ánáoásásáoásá áaánáiámáaáiásá
+á á á á á á á á á á á<á/ápá>á
+á á á á á á á á á<á/ádáiává>á
+á
+á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ábágá-áwáháiátáeá ásáháaádáoáwá áráoáuánádáeádá-álágá ápá-á6á ásámá:ápá-á1á0á"á>á
+á á á á á á á á á á á{á/á*á áPáráoágáráeásásá áBáaárá á*á/á}á
+á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ámábá-á8á"á>á
+á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"áfáláeáxá áiátáeámásá-ácáeánátáeárá áJááááuásátáiáfáyá-ábáeátáwáeáeáná áráeáláaátáiáváeá"á>á
+á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"áaábásáoáláuátáeá áláeáfátá-á0á átáoápá-á1á/á2á á-átáráaánásáláaátáeá-áyá-á1á/á2á áwá-áfáuálálá áhá-á1á ábágá-ágáráaáyá-á2á0á0á"á>á
+á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"áhá-áfáuálálá ábágá-áeámáeáráaáládá-á6á0á0á átáráaánásáiátáiáoáná-áaálálá ádáuáráaátáiáoáná-á3á0á0á"á ásátáyáláeá=á{á{á áwáiádátáhá:á á`á$á{á(á(ásátáeápá á-á á1á)á á/á á2á)á á*á á1á0á0á}á%á`á á}á}á á/á>á
+á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á{á[á1á,á á2á,á á3á]á.ámáaápá(á(ánáuámá)á á=á>á á(á
+á á á á á á á á á á á á á á á á á<ádáiává ákáeáyá=á{ánáuámá}á ácáláaásásáNáaámáeá=á{ácálásáxá(á"áráeáláaátáiáváeá ázá-á1á0á áwá-á8á áhá-á8á áráoáuánádáeádá-áfáuálálá áfáláeáxá áiátáeámásá-ácáeánátáeárá áJááááuásátáiáfáyá-ácáeánátáeárá áfáoánátá-ásáeámáiábáoáládá átáeáxátá-ásámá átáráaánásáiátáiáoáná-ácáoáláoárásá"á,á ásátáeápá á>á=á ánáuámá á?á á"ábágá-áeámáeáráaáládá-á6á0á0á átáeáxátá-áwáháiátáeá"á á:á á"ábágá-ágáráaáyá-á2á0á0á átáeáxátá-ágáráaáyá-á5á0á0á"á)á}á>á
+á á á á á á á á á á á á á á á á á á á{ásátáeápá á>á ánáuámá á?á á<áCáháeácáká ácáláaásásáNáaámáeá=á"áwá-á5á áhá-á5á"á á/á>á á:á ánáuámá}á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á)á)á}á
+á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"áfáláeáxá áJááááuásátáiáfáyá-ábáeátáwáeáeáná ámátá-á2á átáeáxátá-áxásá átáeáxátá-ágáráaáyá-á5á0á0á"á>á
+á á á á á á á á á á á á á á á<ásápáaáná>áCáoánátáaá<á/ásápáaáná>á
+á á á á á á á á á á á á á á á<ásápáaáná>áDáaádáoásá áPáeásásáoáaáiásá<á/ásápáaáná>á
+á á á á á á á á á á á á á á á<ásápáaáná>áEánádáeáráeá�áoá<á/ásápáaáná>á
+á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á<á/ádáiává>á
+á
+á á á á á á á á á á á<áfáoárámá áoánáSáuábámáiátá=á{áháaánádáláeáSáuábámáiátá(áoánáSáuábámáiátá)á}á>á
+á á á á á á á á á á á á á{ásátáeápá á=á=á=á á1á á&á&á á(á
+á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ásápáaácáeá-áyá-á4á áaánáiámáaátáeá-áiáná áfáaádáeá-áiáná ásáláiádáeá-áiáná-áfáráoámá-áráiágáhátá-á4á"á>á
+á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áEámáaáiálá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"áeámáaáiálá"á á{á.á.á.áráeágáiásátáeárá(á'áeámáaáiálá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á{áeáráráoárásá.áeámáaáiálá á&á&á á<ápá ácáláaásásáNáaámáeá=á"átáeáxátá-áráeádá-á5á0á0á átáeáxátá-áxásá ámátá-á1á"á>á{áeáráráoárásá.áeámáaáiálá.ámáeásásáaágáeá}á<á/ápá>á}á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áSáeánáháaá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"ápáaásásáwáoárádá"á á{á.á.á.áráeágáiásátáeárá(á'ápáaásásáwáoárádá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á{áeáráráoárásá.ápáaásásáwáoárádá á&á&á á<ápá ácáláaásásáNáaámáeá=á"átáeáxátá-áráeádá-á5á0á0á átáeáxátá-áxásá ámátá-á1á"á>á{áeáráráoárásá.ápáaásásáwáoárádá.ámáeásásáaágáeá}á<á/ápá>á}á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áCáoánáfáiárámáaárá áSáeánáháaá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"ápáaásásáwáoárádá"á á{á.á.á.áráeágáiásátáeárá(á'ácáoánáfáiárámáPáaásásáwáoárádá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á{áeáráráoárásá.ácáoánáfáiárámáPáaásásáwáoárádá á&á&á á<ápá ácáláaásásáNáaámáeá=á"átáeáxátá-áráeádá-á5á0á0á átáeáxátá-áxásá ámátá-á1á"á>á{áeáráráoárásá.ácáoánáfáiárámáPáaásásáwáoárádá.ámáeásásáaágáeá}á<á/ápá>á}á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á)á}á
+á
+á á á á á á á á á á á á á{ásátáeápá á=á=á=á á2á á&á&á á(á
+á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ásápáaácáeá-áyá-á4á áaánáiámáaátáeá-áiáná áfáaádáeá-áiáná ásáláiádáeá-áiáná-áfáráoámá-áráiágáhátá-á4á"á>á
+á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áNáoámáeá áCáoámápáláeátáoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ánáoámáeá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á{áeáráráoárásá.ánáoámáeá á&á&á á<ápá ácáláaásásáNáaámáeá=á"átáeáxátá-áráeádá-á5á0á0á átáeáxátá-áxásá ámátá-á1á"á>á{áeáráráoárásá.ánáoámáeá.ámáeásásáaágáeá}á<á/ápá>á}á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ágáráiádá ágáráiádá-ácáoálásá-á2á ágáaápá-á4á"á>á
+á á á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áCáPáFá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ácápáfá'á)á}á áoánáCáháaánágáeá=á{á(áeá)á á=á>á á{á áráeágáiásátáeárá(á'ácápáfá'á)á.áoánáCáháaánágáeá(áeá)á;á áháaánádáláeáCáPáFáMáaásáká(áeá)á;á á}á}á ápáláaácáeáháoáládáeárá=á"á0á0á0á.á0á0á0á.á0á0á0á-á0á0á"á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á á á{áeáráráoárásá.ácápáfá á&á&á á<ápá ácáláaásásáNáaámáeá=á"átáeáxátá-áráeádá-á5á0á0á átáeáxátá-áxásá ámátá-á1á"á>á{áeáráráoárásá.ácápáfá.ámáeásásáaágáeá}á<á/ápá>á}á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áRáGá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'árágá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ágáráiádá ágáráiádá-ácáoálásá-á2á ágáaápá-á4á"á>á
+á á á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áDáaátáaá ádáeá áNáaásácáiámáeánátáoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"ádáaátáeá"á á{á.á.á.áráeágáiásátáeárá(á'ádáaátáaáNáaásácáiámáeánátáoá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áTáeáláeáfáoánáeá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'átáeáláeáfáoánáeá'á)á}á áoánáCáháaánágáeá=á{á(áeá)á á=á>á á{á áráeágáiásátáeárá(á'átáeáláeáfáoánáeá'á)á.áoánáCáháaánágáeá(áeá)á;á áháaánádáláeáTáeáláeáfáoánáeáMáaásáká(áeá)á;á á}á}á ápáláaácáeáháoáládáeárá=á"á(á0á0á)á á0á0á0á0á0á-á0á0á0á0á"á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á)á}á
+á
+á á á á á á á á á á á á á{ásátáeápá á=á=á=á á3á á&á&á á(á
+á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ásápáaácáeá-áyá-á4á áaánáiámáaátáeá-áiáná áfáaádáeá-áiáná ásáláiádáeá-áiáná-áfáráoámá-áráiágáhátá-á4á"á>á
+á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áCáEáPá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ácáeápá'á)á}á áoánáCáháaánágáeá=á{á(áeá)á á=á>á á{á áráeágáiásátáeárá(á'ácáeápá'á)á.áoánáCáháaánágáeá(áeá)á;á áháaánádáláeáCáEáPáCáháaánágáeá(áeá)á;á á}á}á ápáláaácáeáháoáládáeárá=á"á0á0á0á0á0á-á0á0á0á"á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á{áeáráráoárásá.ácáeápá á&á&á á<ápá ácáláaásásáNáaámáeá=á"átáeáxátá-áráeádá-á5á0á0á átáeáxátá-áxásá ámátá-á1á"á>á{áeáráráoárásá.ácáeápá.ámáeásásáaágáeá}á<á/ápá>á}á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áEánádáeáráeá�áoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'áeánádáeáráeácáoá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ágáráiádá ágáráiádá-ácáoálásá-á2á ágáaápá-á4á"á>á
+á á á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áNá�ámáeáráoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ánáuámáeáráoá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á á á<ádáiává>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áCáoámápáláeámáeánátáoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ácáoámápáláeámáeánátáoá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ágáráiádá ágáráiádá-ácáoálásá-á3á ágáaápá-á4á"á>á
+á á á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ácáoálá-ásápáaáná-á1á"á>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áBáaáiáráráoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ábáaáiáráráoá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ácáoálá-ásápáaáná-á1á"á>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áCáiádáaádáeá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'ácáiádáaádáeá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ácáoálá-ásápáaáná-á1á"á>á
+á á á á á á á á á á á á á á á á á á á á á<áláaábáeálá ácáláaásásáNáaámáeá=á"ábáláoácáká átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á"á>áEásátáaádáoá<á/áláaábáeálá>á
+á á á á á á á á á á á á á á á á á á á á á<áiánápáuátá átáyápáeá=á"átáeáxátá"á á{á.á.á.áráeágáiásátáeárá(á'áeásátáaádáoá'á)á}á ácáláaásásáNáaámáeá=á"ámátá-á1á ábáláoácáká áwá-áfáuálálá ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá ápáyá-á2á ápáxá-á3á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á áfáoácáuásá:ábáoárádáeárá-áeámáeáráaáládá-á5á0á0á ásámá:átáeáxátá-ásámá"á á/á>á
+á á á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á á á)á}á
+á
+á á á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ámátá-á8á áfáláeáxá áJááááuásátáiáfáyá-ábáeátáwáeáeáná"á>á
+á á á á á á á á á á á á á á á{ásátáeápá á>á á1á á?á á(á
+á á á á á á á á á á á á á á á á á<ábáuátátáoáná átáyápáeá=á"ábáuátátáoáná"á áoánáCáláiácáká=á{ápáráeáváSátáeápá}á ácáláaásásáNáaámáeá=á"áfáláeáxá áiátáeámásá-ácáeánátáeárá ápáxá-á4á ápáyá-á2á ábáoárádáeárá ábáoárádáeárá-ágáráaáyá-á3á0á0á áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-ágáráaáyá-á7á0á0á ábágá-áwáháiátáeá áháoáváeárá:ábágá-ágáráaáyá-á5á0á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-á2á áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á"á>á
+á á á á á á á á á á á á á á á á á á á<áAáráráoáwáLáeáfátá ácáláaásásáNáaámáeá=á"áwá-á4á áhá-á4á ámárá-á2á"á á/á>á áVáoálátáaárá
+á á á á á á á á á á á á á á á á á<á/ábáuátátáoáná>á
+á á á á á á á á á á á á á á á)á á:á á(á
+á á á á á á á á á á á á á á á á á<ádáiává á/á>á
+á á á á á á á á á á á á á á á)á}á
+á á á á á á á á á á á á á á á
+á á á á á á á á á á á á á á á{ásátáeápá á<á á3á á?á á(á
+á á á á á á á á á á á á á á á á á<ábáuátátáoáná átáyápáeá=á"ábáuátátáoáná"á áoánáCáláiácáká=á{ánáeáxátáSátáeápá}á ácáláaásásáNáaámáeá=á"áfáláeáxá áiátáeámásá-ácáeánátáeárá ápáxá-á4á ápáyá-á2á ábáoárádáeárá ábáoárádáeárá-átáráaánásápáaáráeánátá áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-áwáháiátáeá ábágá-áeámáeáráaáládá-á6á0á0á áháoáváeárá:ábágá-áeámáeáráaáládá-á7á0á0á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-á2á áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á"á>á
+á á á á á á á á á á á á á á á á á á áPárá�áxáiámáoá á<áAáráráoáwáRáiágáhátá ácáláaásásáNáaámáeá=á"áwá-á4á áhá-á4á ámálá-á2á"á á/á>á
+á á á á á á á á á á á á á á á á á<á/ábáuátátáoáná>á
+á á á á á á á á á á á á á á á)á á:á á(á
+á á á á á á á á á á á á á á á á á<ábáuátátáoáná átáyápáeá=á"ásáuábámáiátá"á ádáiásáaábáláeádá=á{áiásáLáoáaádáiánágá}á ácáláaásásáNáaámáeá=á"áfáláeáxá áiátáeámásá-ácáeánátáeárá ápáxá-á4á ápáyá-á2á ábáoárádáeárá ábáoárádáeárá-átáráaánásápáaáráeánátá áráoáuánádáeádá-ámádá ásáháaádáoáwá-ásámá átáeáxátá-ásámá áfáoánátá-ámáeádáiáuámá átáeáxátá-áwáháiátáeá ábágá-áeámáeáráaáládá-á6á0á0á áháoáváeárá:ábágá-áeámáeáráaáládá-á7á0á0á áfáoácáuásá:áoáuátáláiánáeá-ánáoánáeá áfáoácáuásá:áráiánágá-á2á áfáoácáuásá:áráiánágá-áeámáeáráaáládá-á5á0á0á ádáiásáaábáláeádá:áoápáaácáiátáyá-á5á0á"á>á
+á á á á á á á á á á á á á á á á á á á{áiásáLáoáaádáiánágá á?á á<áLáoáaádáeárá2á ácáláaásásáNáaámáeá=á"áwá-á4á áhá-á4á áaánáiámáaátáeá-ásápáiáná ámárá-á2á"á á/á>á á:á á<áCáháeácáká ácáláaásásáNáaámáeá=á"áwá-á4á áhá-á4á ámárá-á2á"á á/á>á}á
+á á á á á á á á á á á á á á á á á á áFáiánáaáláiázáaárá áCáaádáaásátáráoá
+á á á á á á á á á á á á á á á á á<á/ábáuátátáoáná>á
+á á á á á á á á á á á á á á á)á}á
+á á á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á á á<á/áfáoárámá>á
+á á á á á á á á á á á
+á á á á á á á á á á á<ádáiává ácáláaásásáNáaámáeá=á"ámátá-á6á átáeáxátá-ácáeánátáeárá átáeáxátá-ásámá"á>á
+á á á á á á á á á á á á áJáááá�á átáeámá áuámáaá ácáoánátáaá?á á<áLáiánáká átáoá=á"á/áláoágáiáná"á ácáláaásásáNáaámáeá=á"átáeáxátá-áeámáeáráaáládá-á6á0á0á áfáoánátá-ámáeádáiáuámá"á>áFáaá�áaá áláoágáiáná<á/áLáiánáká>á
+á á á á á á á á á á á<á/ádáiává>á
+á á á á á á á á á<á/ádáiává>á
+á á á á á á á<á/ádáiává>á
+á á á á á<á/ádáiává>á
+á á á)á;á
+á}á;á
+á
+áeáxápáoárátá ádáeáfáaáuálátá áCáaádáaásátáráoá;á
+á
