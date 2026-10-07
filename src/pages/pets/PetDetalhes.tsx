@@ -18,6 +18,7 @@ type Pet = {
   status: string;
   observacoes: string | null;
   criado_em: string;
+  fotos_pet?: { url: string }[];
 };
 
 const PetDetalhes = () => {
@@ -30,8 +31,7 @@ const PetDetalhes = () => {
     const fetchPet = async () => {
       try {
         const { data, error } = await supabase
-          .from('pets')
-          .select('*')
+          .from('pets').select('*, fotos_pet(url)')
           .eq('id', id)
           .single();
         
@@ -78,8 +78,14 @@ const PetDetalhes = () => {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="h-64 bg-gray-100 relative group cursor-pointer hover:bg-gray-200 transition-colors">
               <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                {pet.especie === 'gato' ? <Cat className="w-16 h-16 mb-2" /> : <Dog className="w-16 h-16 mb-2" />}
-                <span className="text-sm font-medium">Adicionar Foto (Em breve)</span>
+                {pet.fotos_pet && pet.fotos_pet.length > 0 ? (
+                <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-cover" />
+              ) : (
+                <>
+                  {pet.especie === 'gato' ? <Cat className="w-16 h-16 mb-2" /> : <Dog className="w-16 h-16 mb-2" />}
+                  <span className="text-sm font-medium">Sem foto</span>
+                </>
+              )}
               </div>
             </div>
             <div className="p-6">

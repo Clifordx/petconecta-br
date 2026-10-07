@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Dog, Cat, ArrowLeft, Loader2 } from 'lucide-react';
+import { Dog, Cat, ArrowLeft, Loader2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -27,6 +27,8 @@ const NovoPet = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [foto, setFoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<PetForm>({
     resolver: zodResolver(petSchema),
@@ -42,11 +44,25 @@ const NovoPet = () => {
   const especie = watch('especie');
   const sexo = watch('sexo');
 
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFoto(file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeFoto = () => {
+    setFoto(null);
+    setPreview(null);
+  };
+
   const onSubmit = async (data: PetForm) => {
     if (!user) return;
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('pets').insert({
+      // 1. Insert Pet
+      const { data: newPet, error: petError } = await supabase.from('pets').insert({
         tutor_id: user.id,
         nome: data.nome,
         especie: data.especie,
@@ -58,9 +74,35 @@ const NovoPet = () => {
         microchip: data.microchip || null,
         observacoes: data.observacoes || null,
         status: 'com_tutor'
-      });
+      }).select().single();
 
-      if (error) throw error;
+      if (petError) throw petError;
+
+      // 2. Upload Foto (If exists)
+      if (foto && newPet) {
+        const fileExt = foto.name.split('.').pop();
+        const fileName = `${newPet.id}-${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('pets')
+          .upload(filePath, foto);
+
+        if (uploadError) {
+          console.error('Erro no upload:', uploadError);
+          toast.warning('Pet salvo, mas houve um erro ao enviar a foto.');
+        } else {
+          // Get public URL
+          const { data: publicUrlData } = supabase.storage.from('pets').getPublicUrl(filePath);
+          
+          // Insert into fotos_pet
+          await supabase.from('fotos_pet').insert({
+            pet_id: newPet.id,
+            url: publicUrlData.publicUrl,
+            is_principal: true
+          });
+        }
+      }
 
       toast.success('Pet cadastrado com sucesso!');
       navigate('/app/meus-pets');
@@ -103,6 +145,34 @@ const NovoPet = () => {
               <Cat className="w-8 h-8 mb-2" />
               <span className="font-medium">Gato</span>
             </button>
+          </div>
+
+          {/* Photo Upload Area */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-3">Foto do Pet</label>
+            {preview ? (
+              <div className="relative w-40 h-40 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={removeFoto}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors shadow-sm"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-emerald-400 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-2 text-gray-400" />
+                    <p className="mb-1 text-sm text-gray-500"><span className="font-semibold text-emerald-600">Clique para enviar</span> ou arraste a foto</p>
+                    <p className="text-xs text-gray-400">PNG, JPG ou JPEG</p>
+                  </div>
+                  <input type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleFotoChange} />
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
