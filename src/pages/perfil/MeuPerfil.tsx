@@ -51,7 +51,7 @@ const MeuPerfil = () => {
     const cep = e.target.value.replace(/\D/g, '');
     if (cep.length === 8) {
       try {
-        const res = await fetch(`https://viacep.com.br/ws/\${cep}/json/`);
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
         const data = await res.json();
         if (!data.erro) {
           setValue('endereco', data.logradouro);
@@ -72,8 +72,8 @@ const MeuPerfil = () => {
     setIsUploadingAvatar(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = \`\${user.id}-\${Math.random()}.\${fileExt}\`;
-      const filePath = \`avatars/\${fileName}\`;
+      const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('pets') // Reusing pets bucket or you can use avatars bucket if created
