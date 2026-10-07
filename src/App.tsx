@@ -29,6 +29,7 @@ import MeuPerfil from './pages/perfil/MeuPerfil';
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
 import GestaoPets from './pages/admin/GestaoPets';
+import GestaoUsuarios from './pages/admin/GestaoUsuarios';
 import GestaoFila from './pages/admin/GestaoFila';
 import GestaoConsultas from './pages/admin/GestaoConsultas';
 import GestaoDenuncias from './pages/admin/GestaoDenuncias';
@@ -109,6 +110,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute allowedRoles={['admin_prefeitura', 'admin_ong', 'veterinario', 'voluntario']}><AdminLayout /></ProtectedRoute>}>
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/pets" element={<GestaoPets />} />
+        <Route path="/admin/usuarios" element={<GestaoUsuarios />} />
         <Route path="/admin/castracao" element={<GestaoFila />} />
         <Route path="/admin/consultas" element={<GestaoConsultas />} />
         <Route path="/admin/denuncias" element={<GestaoDenuncias />} />
