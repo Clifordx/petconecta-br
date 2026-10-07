@@ -30,7 +30,7 @@ const PetDetalhes = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editForm, setEditForm] = useState({ observacoes: '', castrado: false, vacinado: false, cor: '', porte: '', sexo: '' });
+  const [editForm, setEditForm] = useState({ observacoes: '', castrado: false, vacinado: false, cor: '', porte: '', sexo: '', status: '' });
   const [isUploading, setIsUploading] = useState(false);
   const { user } = useAuth();
 
@@ -46,7 +46,8 @@ const PetDetalhes = () => {
         vacinado: editForm.vacinado,
         cor: editForm.cor,
         porte: editForm.porte,
-        sexo: editForm.sexo
+        sexo: editForm.sexo,
+        status: editForm.status
       }).eq('id', pet.id);
       
       if (error) throw error;
@@ -155,7 +156,7 @@ const PetDetalhes = () => {
       
       // Refresh pet data
       const { data } = await supabase.from('pets').select('*, fotos_pet(url)').order('criado_em', { referencedTable: 'fotos_pet', ascending: false }).eq('id', pet.id).single();
-      if (data) { setPet(data); setEditForm({ observacoes: data.observacoes || '', castrado: data.castrado || false, vacinado: data.vacinado || false, cor: data.cor || '', porte: data.porte || '', sexo: data.sexo || '' }); }
+      if (data) { setPet(data); setEditForm({ observacoes: data.observacoes || '', castrado: data.castrado || false, vacinado: data.vacinado || false, cor: data.cor || '', porte: data.porte || '', sexo: data.sexo || '', status: data.status || 'com_tutor' }); }
 
     } catch (error) {
       console.error('Erro ao subir foto:', error);
@@ -256,9 +257,29 @@ const PetDetalhes = () => {
                   <h2 className="text-2xl font-bold text-gray-900">{pet.nome}</h2>
                   <p className="text-gray-500 capitalize">{pet.especie} • {pet.raca}</p>
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                  {pet.status === 'com_tutor' ? 'Comigo' : pet.status.replace('_', ' ')}
-                </span>
+                {isEditing ? (
+                  <select 
+                    value={editForm.status} 
+                    onChange={e => setEditForm({...editForm, status: e.target.value})}
+                    className="border-gray-300 rounded-lg text-sm py-1.5 pl-3 pr-8 focus:ring-emerald-500 focus:border-emerald-500 bg-white shadow-sm border font-medium text-gray-700"
+                  >
+                    <option value="com_tutor">✅ Comigo</option>
+                    <option value="perdido">🚨 Perdido</option>
+                    <option value="para_adocao">🏠 Para Adoção</option>
+                    <option value="obito">🕊️ Óbito</option>
+                  </select>
+                ) : (
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                    pet.status === 'perdido' ? 'bg-red-100 text-red-800 border border-red-200' : 
+                    pet.status === 'para_adocao' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 
+                    pet.status === 'obito' ? 'bg-gray-100 text-gray-800 border border-gray-200' : 
+                    'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  }`}>
+                    {pet.status === 'com_tutor' ? 'COMIGO' : 
+                     pet.status === 'para_adocao' ? 'PARA ADOÇÃO' : 
+                     pet.status === 'obito' ? 'ÓBITO' : 'PERDIDO'}
+                  </span>
+                )}
               </div>
 
               <div className="space-y-3 py-4 border-t border-b border-gray-100 mb-4">
