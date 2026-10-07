@@ -15,7 +15,7 @@ const cadastroSchema = z.object({
   confirmPassword: z.string(),
   nome: z.string().min(3, 'Nome muito curto'),
   cpf: z.string().min(11, 'CPF inválido'),
-  rg: z.string().min(1, 'RG obrigatório'),
+  rg: z.string().optional(),
   dataNascimento: z.string().min(1, 'Data obrigatória'),
   telefone: z.string().min(11, 'Telefone inválido'),
   cep: z.string().min(8, 'CEP inválido'),
