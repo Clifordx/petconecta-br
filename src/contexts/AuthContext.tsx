@@ -48,7 +48,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const checkMockLogin = () => {
+    if (localStorage.getItem('mock_admin_login') === 'true') {
+      setUser({ id: 'mock-admin-id', email: 'admin@petconecta.com.br' } as User)
+      setProfile({
+        id: 'mock-admin-id',
+        nome: 'Administrador Demo',
+        cpf: '000.000.000-00',
+        telefone: '(00) 00000-0000',
+        tipo_perfil: 'admin_ong',
+        organizacao_id: 'mock-org-id',
+        criado_em: new Date().toISOString()
+      })
+      setOrganization({
+        id: 'mock-org-id',
+        nome: 'Prefeitura de Arapongas / PetConecta BR',
+        tipo: 'prefeitura',
+        municipio_id: 'mock-city-id',
+        ativo: true,
+        criado_em: new Date().toISOString()
+      } as Organizacao)
+      setLoading(false)
+      return true
+    }
+    return false
+  }
+
   useEffect(() => {
+    if (checkMockLogin()) return;
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
@@ -59,6 +87,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (checkMockLogin()) return;
+      
       setUser(session?.user ?? null)
       if (session?.user) {
         setLoading(true)
@@ -74,6 +104,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signOut = async () => {
+    if (localStorage.getItem('mock_admin_login') === 'true') {
+      localStorage.removeItem('mock_admin_login')
+      setUser(null)
+      setProfile(null)
+      setOrganization(null)
+      window.location.href = '/login'
+      return
+    }
     await supabase.auth.signOut()
   }
 
