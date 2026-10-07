@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { Dog, Cat, ArrowLeft, Loader2, Upload, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import imglyRemoveBackground from '@imgly/background-removal';
+import { removeBackground } from '@imgly/background-removal';
 
 const petSchema = z.object({
   nome: z.string().min(2, 'Nome é obrigatório'),
@@ -60,7 +60,7 @@ const NovoPet = () => {
         toast.info('Removendo o fundo da foto com Inteligência Artificial...', { duration: 4000 });
         
         // Remove background (returns transparent PNG blob)
-        const transparentBlob = await imglyRemoveBackground(file);
+        const transparentBlob = await removeBackground(file);
         
         // Draw on white background and convert to smaller JPG
         const processedFile = await new Promise<File>((resolve, reject) => {

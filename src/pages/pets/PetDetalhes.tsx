@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import imglyRemoveBackground from '@imgly/background-removal';
+import { removeBackground } from '@imgly/background-removal';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -42,7 +42,7 @@ const PetDetalhes = () => {
       toast.info('Recortando foto com IA...', { duration: 4000 });
       
       // Remove BG
-      const transparentBlob = await imglyRemoveBackground(file);
+      const transparentBlob = await removeBackground(file);
       
       // Draw on white background
       const processedFile = await new Promise<File>((resolve, reject) => {
@@ -153,10 +153,12 @@ const PetDetalhes = () => {
               <input type="file" className="hidden" accept="image/*" onChange={handleFotoUpload} disabled={isUploading} />
               <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                 {pet.fotos_pet && pet.fotos_pet.length > 0 ? (
-                <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-white font-medium">Alterar Foto</span>
-                </div>
+                <>
+                  <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-white font-medium">Alterar Foto</span>
+                  </div>
+                </>
               ) : (
                 <>
                   {pet.especie === 'gato' ? <Cat className="w-16 h-16 mb-2" /> : <Dog className="w-16 h-16 mb-2" />}
