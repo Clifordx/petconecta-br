@@ -25,15 +25,6 @@ const Login = () => {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      // Mock Login bypass
-      if (data.email === 'admin@petconecta.com.br' && data.password === 'admin123') {
-        localStorage.setItem('mock_admin_login', 'true');
-        toast.success('Login de demonstração realizado com sucesso!');
-        // Small delay to allow context to pick it up or direct reload
-        window.location.href = '/app/dashboard';
-        return;
-      }
-
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
