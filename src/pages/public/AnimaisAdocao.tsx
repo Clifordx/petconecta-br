@@ -22,7 +22,7 @@ export default function AnimaisAdocao() {
         .from('pets')
         .select('*, fotos_pet(url, is_principal)')
         .eq('status', 'DISPONIVEL')
-        .order('created_at', { ascending: false });
+        .order('criado_em', { ascending: false });
 
       if (error) throw error;
       setAnimais(data || []);
@@ -100,7 +100,7 @@ export default function AnimaisAdocao() {
                     {animal.especie === 'CACHORRO' ? 'Cão' : animal.especie === 'GATO' ? 'Gato' : animal.especie}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 mb-4">{animal.raca || 'SRD'} • {animal.idade_aproximada || 'Idade desconhecida'} • {animal.porte}</p>
+                <p className="text-sm text-gray-500 mb-4">{animal.raca || 'SRD'} • {animal.observacoes || 'Idade desconhecida'} • {animal.porte}</p>
                 <Button className="w-full bg-emerald-600 hover:bg-emerald-700">Conhecer {animal.nome}</Button>
               </div>
             </div>

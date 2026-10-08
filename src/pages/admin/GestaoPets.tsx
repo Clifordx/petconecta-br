@@ -31,7 +31,7 @@ export default function GestaoPets() {
       const { data, error } = await supabase
         .from('pets')
         .select('*, fotos_pet(url, is_principal)')
-        .order('created_at', { ascending: false });
+        .order('criado_em', { ascending: false });
 
       if (error) throw error;
       setPets(data || []);
@@ -54,13 +54,10 @@ export default function GestaoPets() {
           nome,
           especie,
           porte,
-          idade_aproximada: idade,
           status,
           sexo: 'MACHO', // default for MVP
           castrado: false,
-          vacinado: false,
-          vermifugado: false,
-          municipio_id: 'arapongas-pr', // mocked
+          observacoes: idade ? `Idade aproximada: ${idade}` : null
         })
         .select()
         .single();
@@ -181,7 +178,7 @@ export default function GestaoPets() {
               </div>
               <div className="p-4">
                 <h3 className="font-bold text-gray-900 text-lg">{pet.nome}</h3>
-                <p className="text-sm text-gray-500 mb-3">{pet.especie === 'CACHORRO' ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {pet.idade_aproximada || 'Idade desconhecida'}</p>
+                <p className="text-sm text-gray-500 mb-3">{pet.especie === 'CACHORRO' ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {pet.observacoes || 'Idade desconhecida'}</p>
                 <div className="flex gap-2">
                   <button className="flex-1 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex justify-center items-center gap-1">
                     <Edit className="w-3.5 h-3.5" /> Editar
@@ -214,7 +211,7 @@ export default function GestaoPets() {
                       <p className="text-xs text-gray-500">{pet.especie === 'CACHORRO' ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'}</p>
                     </div>
                   </td>
-                  <td className="p-4 text-gray-700">{pet.idade_aproximada || '-'} • {pet.porte}</td>
+                  <td className="p-4 text-gray-700">{pet.observacoes || '-'} • {pet.porte}</td>
                   <td className="p-4">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium \${
                       pet.status === 'DISPONIVEL' ? 'bg-emerald-100 text-emerald-800' : 

@@ -97,7 +97,7 @@ export default function DetalheAnimal() {
             <div className="grid grid-cols-2 gap-4 mb-8">
               <div className="bg-gray-50 p-4 rounded-xl">
                 <span className="block text-sm text-gray-500 mb-1">Idade</span>
-                <span className="font-semibold text-gray-900">{animal.idade_aproximada || 'Desconhecida'}</span>
+                <span className="font-semibold text-gray-900">{animal.observacoes || 'Desconhecida'}</span>
               </div>
               <div className="bg-gray-50 p-4 rounded-xl">
                 <span className="block text-sm text-gray-500 mb-1">Porte</span>
@@ -113,10 +113,10 @@ export default function DetalheAnimal() {
               </div>
             </div>
 
-            {animal.descricao && (
+            {animal.observacoes && (
               <div className="mb-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-2">Sobre {animal.nome}</h3>
-                <p className="text-gray-700 leading-relaxed">{animal.descricao}</p>
+                <p className="text-gray-700 leading-relaxed">{animal.observacoes}</p>
               </div>
             )}
 
@@ -124,16 +124,8 @@ export default function DetalheAnimal() {
               <h3 className="text-xl font-bold text-gray-900 mb-4">Saúde</h3>
               <ul className="space-y-2">
                 <li className="flex items-center text-gray-700">
-                  {animal.vacinado ? <CheckCircle2 className="text-emerald-500 mr-2" size={20} /> : <AlertCircle className="text-gray-400 mr-2" size={20} />}
-                  Vacinado
-                </li>
-                <li className="flex items-center text-gray-700">
                   {animal.castrado ? <CheckCircle2 className="text-emerald-500 mr-2" size={20} /> : <AlertCircle className="text-gray-400 mr-2" size={20} />}
                   Castrado
-                </li>
-                <li className="flex items-center text-gray-700">
-                  {animal.vermifugado ? <CheckCircle2 className="text-emerald-500 mr-2" size={20} /> : <AlertCircle className="text-gray-400 mr-2" size={20} />}
-                  Vermifugado
                 </li>
                 {animal.microchip && (
                   <li className="flex items-center text-gray-700">
@@ -141,7 +133,7 @@ export default function DetalheAnimal() {
                     Microchipado
                   </li>
                 )}
-              </ul>
+</ul>
             </div>
 
             <Button className="w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700 shadow-lg">
