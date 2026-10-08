@@ -31,6 +31,7 @@ const NovoPet = () => {
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [useAI, setUseAI] = useState(true);
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<PetForm>({
     resolver: zodResolver(petSchema),
@@ -47,109 +48,121 @@ const NovoPet = () => {
   const sexo = watch('sexo');
 
   
+  
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // Show immediate preview
       const tempPreview = URL.createObjectURL(file);
       setPreview(tempPreview);
       setIsProcessingImage(true);
       
       try {
-        toast.info('Criando foto de estúdio com IA...', { duration: 4000 });
-        
-        // Remove background (returns transparent PNG blob)
-        
-        // Carrega o logo do PetConecta antes de processar
         const logoImg = new Image();
         await new Promise((resolve) => {
           logoImg.onload = resolve;
-          logoImg.onerror = resolve; // Continue even if logo fails to load
+          logoImg.onerror = resolve;
           logoImg.src = '/paw-logo.svg';
         });
+
+        let blobToDraw: Blob = file;
+
+        if (useAI) {
+          toast.info('Processando foto...', { duration: 2000 });
+          try {
+            blobToDraw = await removeBackground(file);
+          } catch (err) {
+            console.error("AI error", err);
+            toast.warning('A IA não conseguiu remover o fundo. Usando foto original.');
+            blobToDraw = file;
+          }
+        }
         
-        const transparentBlob = await removeBackground(file);
-        
-        // Draw on white background and convert to smaller JPG
         const processedFile = await new Promise<File>((resolve, reject) => {
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return reject('Context error');          // Draw professional gradient background
-          const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-          gradient.addColorStop(0, '#ffffff');
-          gradient.addColorStop(1, '#f1f5f9'); // slate-100
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Add drop shadow for the pet to give a studio effect
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-          ctx.shadowBlur = 40;
-          ctx.shadowOffsetY = 20;
-          
-          // Draw Transparent Image
-          ctx.drawImage(img, 0, 0);
-          
-          // Reset shadow for text
-          ctx.shadowColor = 'transparent';
-          ctx.shadowBlur = 0;
-          ctx.shadowOffsetY = 0;
-          
-          // Draw PetConecta BR Banner at bottom
-          const fontSize = Math.max(24, canvas.height * 0.04);
-          const bannerHeight = fontSize * 2.5;
-          
-          // Draw banner background at bottom
-          ctx.fillStyle = '#059669'; // emerald-600
-          ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
-          
-          // Draw text configuration
-          ctx.fillStyle = '#ffffff';
-          ctx.font = `bold ${fontSize}px sans-serif`;
-          ctx.textBaseline = 'middle';
-          
-          const text = 'PetConecta BR';
-          const textWidth = ctx.measureText(text).width;
-          const logoSize = fontSize * 1.2;
-          const gap = 10;
-          const totalWidth = logoSize + gap + textWidth;
-          
-          const startX = (canvas.width - totalWidth) / 2;
-          const centerY = canvas.height - (bannerHeight / 2);
-          
-          // If logoImg is available, draw it
-          if (typeof logoImg !== 'undefined' && logoImg.complete && logoImg.naturalHeight !== 0) {
-            ctx.drawImage(logoImg, startX, centerY - (logoSize / 2), logoSize, logoSize);
-          }
-          
-          ctx.textAlign = 'left';
-          ctx.fillText(text, startX + logoSize + gap, centerY);
             
+            let targetWidth = img.width;
+            let targetHeight = img.height;
+            const MAX_SIZE = 1200;
+            if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
+              const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
+              targetWidth *= ratio;
+              targetHeight *= ratio;
+            }
+            
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject('Context error');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(1, '#f1f5f9');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (useAI) {
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+              ctx.shadowBlur = 40;
+              ctx.shadowOffsetY = 20;
+            }
+            
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            
+            const fontSize = Math.max(24, canvas.height * 0.04);
+            const bannerHeight = fontSize * 2.5;
+            
+            ctx.fillStyle = '#059669';
+            ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = 'middle';
+            
+            const text = 'PetConecta BR';
+            const textWidth = ctx.measureText(text).width;
+            const logoSize = fontSize * 1.2;
+            const gap = 10;
+            const totalWidth = logoSize + gap + textWidth;
+            
+            const startX = (canvas.width - totalWidth) / 2;
+            const centerY = canvas.height - (bannerHeight / 2);
+            
+            if (typeof logoImg !== 'undefined' && logoImg.complete && logoImg.naturalHeight !== 0) {
+              ctx.drawImage(logoImg, startX, centerY - (logoSize / 2), logoSize, logoSize);
+            }
+            
+            ctx.textAlign = 'left';
+            ctx.fillText(text, startX + logoSize + gap, centerY);
+              
             canvas.toBlob((blob) => {
               if (!blob) return reject('Blob error');
               const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg' });
               resolve(newFile);
             }, 'image/jpeg', 0.9);
           };
-          img.src = URL.createObjectURL(transparentBlob);
+          img.src = URL.createObjectURL(blobToDraw);
         });
         
         setFoto(processedFile);
         setPreview(URL.createObjectURL(processedFile));
-        toast.success('Fundo removido com sucesso!');
+        if (useAI) toast.success('Fundo removido com sucesso!');
       } catch (error) {
         console.error('Erro ao processar imagem:', error);
-        toast.error('Não foi possível remover o fundo automaticamente. Usando foto original.');
+        toast.error('Não foi possível processar a imagem. Usando original.');
         setFoto(file);
       } finally {
         setIsProcessingImage(false);
       }
     }
   };
+  
 
   const removeFoto = () => {
     setFoto(null);
