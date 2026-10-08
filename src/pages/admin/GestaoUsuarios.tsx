@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, Filter, ShieldCheck, FileText, MapPin, Dog, AlertCircle, X, CheckCircle2 } from 'lucide-react';
+import { Users, Search, Filter, ShieldCheck, FileText, MapPin, Dog, AlertCircle, X, CheckCircle2, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Perfil } from '@/types';
 import { toast } from 'sonner';
@@ -186,9 +186,22 @@ export default function GestaoUsuarios() {
                   <p className="text-gray-900">{selectedUser.cpf}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 font-medium">Telefone</p>
-                  <p className="text-gray-900">{selectedUser.telefone || 'Não informado'}</p>
-                </div>
+                    <p className="text-sm text-gray-500 font-medium">Telefone</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-gray-900">{selectedUser.telefone || 'Não informado'}</p>
+                      {selectedUser.telefone && (
+                        <a 
+                          href={`https://wa.me/55${selectedUser.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${selectedUser.nome.split(' ')[0]}, aqui é da equipe do PetConecta BR. Como podemos ajudar?`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500 text-white text-xs font-medium rounded-md hover:bg-emerald-600 transition-colors"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 <div className="col-span-2">
                   <p className="text-sm text-gray-500 font-medium">Endereço Completo</p>
                   <p className="text-gray-900 flex items-start mt-1">
