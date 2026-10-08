@@ -62,9 +62,13 @@ export function Header() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 text-sm focus:outline-none"
                 >
+                  {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="h-8 w-8 rounded-full object-cover border border-gray-200" />
+                ) : (
                   <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-medium">
                     {profile?.nome?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </div>
+                )}
                   <span className="font-medium text-gray-700">{profile?.nome?.split(' ')[0] || 'Usuário'}</span>
                 </button>
 
@@ -147,9 +151,13 @@ export function Header() {
             {user ? (
               <div className="space-y-1">
                 <div className="px-3 flex items-center gap-3 mb-3">
+                  {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="h-10 w-10 rounded-full object-cover border border-gray-200" />
+                ) : (
                   <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-medium">
                     {profile?.nome?.charAt(0) || user.email?.charAt(0) || 'U'}
                   </div>
+                )}
                   <div>
                     <div className="text-base font-medium text-gray-800">{profile?.nome || 'Usuário'}</div>
                     <div className="text-sm font-medium text-gray-500">{user.email}</div>
