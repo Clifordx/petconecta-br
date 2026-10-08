@@ -71,7 +71,7 @@ export default function GestaoPets() {
       if (foto && newPet) {
         const fileExt = foto.name.split('.').pop();
         const fileName = `\${newPet.id}-\${Math.random()}.\${fileExt}`;
-        const filePath = `\${newPet.id}/\${fileName}`;
+        const filePath = `\${user?.id}/\${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('pets')
