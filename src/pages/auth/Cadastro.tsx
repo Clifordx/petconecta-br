@@ -124,6 +124,65 @@ const Cadastro = () => {
 
       if (authError) throw authError;
 
+      // --- INÍCIO DO UPLOAD DAS FOTOS ---
+      if (authData.user) {
+        let avatarUrl = null;
+        let documentoUrl = null;
+
+        // 1. Upload da Foto de Perfil
+        if (profileFile) {
+          const ext = profileFile.name.split('.').pop();
+          const fileName = `${authData.user.id}_${Date.now()}.${ext}`;
+          
+          const { error: uploadProfileError } = await supabase.storage
+            .from('avatars')
+            .upload(fileName, profileFile);
+            
+          if (!uploadProfileError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(fileName);
+            avatarUrl = publicUrl;
+          } else {
+            console.error('Erro ao subir foto de perfil:', uploadProfileError);
+          }
+        }
+
+        // 2. Upload do Documento
+        if (docFile) {
+          const ext = docFile.name.split('.').pop();
+          const fileName = `${authData.user.id}_${Date.now()}.${ext}`;
+          
+          const { error: uploadDocError } = await supabase.storage
+            .from('documentos')
+            .upload(fileName, docFile);
+            
+          if (!uploadDocError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('documentos')
+              .getPublicUrl(fileName);
+            documentoUrl = publicUrl;
+          } else {
+            console.error('Erro ao subir documento:', uploadDocError);
+          }
+        }
+
+        // 3. Atualiza o perfil recém-criado com as URLs das fotos
+        if (avatarUrl || documentoUrl) {
+          // Pequeno delay para garantir que o trigger do banco já criou a linha
+          await new Promise(r => setTimeout(r, 1000));
+          
+          await supabase
+            .from('perfis')
+            .update({ 
+              avatar_url: avatarUrl, 
+              documento_url: documentoUrl 
+            })
+            .eq('id', authData.user.id);
+        }
+      }
+      // --- FIM DO UPLOAD ---
+
       toast.success('Conta criada com sucesso! Verifique seu e-mail para confirmar.');
       navigate('/login');
     } catch (error: any) {
