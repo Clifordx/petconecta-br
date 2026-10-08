@@ -68,7 +68,7 @@ export default function GestaoFila() {
         }
       }
       
-      toast.success(\`Status alterado para \${novoStatus}\`);
+      toast.success(`Status alterado para \${novoStatus}`);
       fetchData();
     } catch (error) {
       console.error('Erro ao atualizar:', error);
