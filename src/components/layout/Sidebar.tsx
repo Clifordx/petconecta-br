@@ -1,7 +1,8 @@
 ﻿import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
+  Building2, 
   Dog, 
   Scissors, 
   Stethoscope, 
@@ -29,6 +30,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'Pets', icon: Dog, path: '/admin/pets' },
+    { name: 'Clínicas', icon: Building2, path: '/admin/clinicas' },
     { name: 'Castração', icon: Scissors, path: '/admin/castracao' },
     { name: 'Consultas', icon: Stethoscope, path: '/admin/consultas' },
     { name: 'Denúncias', icon: AlertTriangle, path: '/admin/denuncias' },
