@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Filter, LayoutGrid, List, Heart, Edit, Trash2, Camera, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { removeBackground } from '@imgly/background-removal';
 import { Pet } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +23,78 @@ export default function GestaoPets() {
   const [status, setStatus] = useState('para_adocao');
   const [foto, setFoto] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsProcessingImage(true);
+      try {
+        toast.info('Criando foto de estúdio com IA...', { duration: 4000 });
+        
+        const transparentBlob = await removeBackground(file);
+        
+        const processedFile = await new Promise<File>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return reject('Context error');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(1, '#f1f5f9');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+            ctx.shadowBlur = 40;
+            ctx.shadowOffsetY = 20;
+            
+            ctx.drawImage(img, 0, 0);
+            
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+            
+            const fontSize = Math.max(24, canvas.height * 0.04);
+            const bannerHeight = fontSize * 2.5;
+            
+            ctx.fillStyle = '#059669';
+            ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🐾 PetConecta BR', canvas.width / 2, canvas.height - (bannerHeight / 2));
+            
+            canvas.toBlob((blob) => {
+              if (!blob) return reject('Blob error');
+              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg' });
+              resolve(newFile);
+            }, 'image/jpeg', 0.9);
+          };
+          img.src = URL.createObjectURL(transparentBlob);
+        });
+        
+        setFoto(processedFile);
+        toast.success('Fundo removido com sucesso!');
+      } catch (error) {
+        console.error('Erro ao processar imagem:', error);
+        toast.error('Não foi possível remover o fundo automaticamente. Usando foto original.');
+        setFoto(file);
+      } finally {
+        setIsProcessingImage(false);
+      }
+    } else {
+      setFoto(null);
+    }
+  };
+
 
   useEffect(() => {
     fetchPets();
@@ -318,13 +391,14 @@ export default function GestaoPets() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Foto Principal</label>
-                <input type="file" accept="image/*" onChange={(e) => setFoto(e.target.files?.[0] || null)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+                <input type="file" accept="image/*" onChange={handleFotoChange}
+                  disabled={isProcessingImage} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
               </div>
 
               <div className="pt-4 flex gap-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">Cancelar</button>
-                <button type="submit" disabled={saving} className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-70 flex justify-center items-center">
-                  {saving ? 'Salvando...' : editingPet ? 'Atualizar Pet' : 'Cadastrar Pet'}
+                <button type="submit" disabled={saving || isProcessingImage} className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-70 flex justify-center items-center">
+                  {saving ? 'Salvando...' : isProcessingImage ? 'Processando Foto...' : editingPet ? 'Atualizar Pet' : 'Cadastrar Pet'}
                 </button>
               </div>
             </form>
