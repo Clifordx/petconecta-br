@@ -37,7 +37,7 @@ export default function GestaoPets() {
 
       if (error) throw error;
       setPets(data || []);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao buscar pets:', error);
       toast.error('Erro ao carregar os animais.');
     } finally {
@@ -93,7 +93,7 @@ export default function GestaoPets() {
       fetchPets();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      toast.error(`Erro: ${error.message || JSON.stringify(error)}`);
+      toast.error(`Erro: ${(error as any).message || JSON.stringify(error)}`);
     } finally {
       setSaving(false);
     }
