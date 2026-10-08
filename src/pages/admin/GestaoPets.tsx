@@ -10,20 +10,18 @@ export default function GestaoPets() {
   const [viewMode, setViewMode] = useState<'grid' | 'lista'>('grid');
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [editingPet, setEditingPet] = useState<any>(null);
   
-  // New Pet Form state
   const [nome, setNome] = useState('');
   const [especie, setEspecie] = useState('cao');
   const [porte, setPorte] = useState('medio');
   const [idade, setIdade] = useState('');
   const [status, setStatus] = useState('para_adocao');
-  const [editingPet, setEditingPet] = useState<any>(null);
   const [foto, setFoto] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchPets();
@@ -31,158 +29,189 @@ export default function GestaoPets() {
 
   const fetchPets = async () => {
     try {
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*, fotos_pet(url, is_principal)')
-        .order('criado_em', { ascending: false });
-
+      const { data: petsData, error } = await supabase.from('pets').select('*, fotos_pet(*)').order('criado_em', { ascending: false });
       if (error) throw error;
       
+      if (petsData) {
+        const { data: perfis } = await supabase.from('perfis').select('id, nome');
+        const petsComTutores = petsData.map(pet => ({
+          ...pet,
+          tutor_nome: pet.tutor_id ? (perfis?.find(p => p.id === pet.tutor_id)?.nome || 'Tutor Privado') : 'Sem Tutor'
+        }));
+        setPets(petsComTutores);
+      }
     } catch (error) {
       console.error('Erro ao buscar pets:', error);
-      toast.error('Erro ao carregar os animais.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getPrincipalPhoto = (fotos: any[]) => {
+    if (!fotos || fotos.length === 0) return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800';
+    const principal = fotos.find(f => f.is_principal);
+    return principal ? principal.url : fotos[0].url;
+  };
+
+  const filteredPets = pets.filter(pet => 
+    pet.nome.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDeletePet = async (id: string) => {
+    if (!window.confirm('Tem certeza que deseja excluir este pet?')) return;
+    try {
+      const { error } = await supabase.from('pets').delete().eq('id', id);
+      if (error) throw error;
+      toast.success('Pet excluído com sucesso!');
+      fetchPets();
+    } catch (error: any) {
+      toast.error(`Erro ao excluir: ${error.message || JSON.stringify(error)}`);
+    }
+  };
+
+  const openEditModal = (pet: any) => {
+    setEditingPet(pet);
+    setNome(pet.nome);
+    setEspecie(pet.especie);
+    setPorte(pet.porte);
+    setStatus(pet.status);
+    const obs = pet.observacoes || '';
+    if (obs.startsWith('Idade aproximada: ')) {
+      setIdade(obs.replace('Idade aproximada: ', ''));
+    } else {
+      setIdade('');
+    }
+    setFoto(null);
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setEditingPet(null);
+    setNome('');
+    setEspecie('cao');
+    setPorte('medio');
+    setIdade('');
+    setStatus('para_adocao');
+    setFoto(null);
+  };
+
+  const openNewModal = () => {
+    resetForm();
+    setIsModalOpen(true);
   };
 
   const handleSavePet = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      // 1. Inserir o Pet
-      const { data: newPet, error: petError } = await supabase
-        .from('pets')
-        .insert({
-          nome,
-          especie,
-          porte,
-          status,
-          sexo: 'femea', // default para Shakira, mas vamos aceitar femea
-          castrado: false,
-          observacoes: idade ? `Idade aproximada: ${idade}` : null,
-          tutor_id: user?.id
-        })
-        .select()
-        .single();
-
-      if (petError) throw petError;
-
-      // 2. Fazer upload da foto se houver
-      if (foto && newPet) {
-        const fileExt = foto.name.split('.').pop();
-        const fileName = `\${newPet.id}-\${Math.random()}.\${fileExt}`;
-        const filePath = `\${user?.id}/\${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
+      let petId = editingPet?.id;
+      
+      if (editingPet) {
+        const { error: updateError } = await supabase
           .from('pets')
-          .upload(filePath, foto);
+          .update({
+            nome, especie, porte, status,
+            observacoes: idade ? `Idade aproximada: ${idade}` : null,
+          })
+          .eq('id', editingPet.id);
+        if (updateError) throw updateError;
+        toast.success('Pet atualizado com sucesso!');
+      } else {
+        const { data: newPet, error: insertError } = await supabase
+          .from('pets')
+          .insert({
+            nome, especie, porte, status, sexo: 'femea', castrado: false,
+            observacoes: idade ? `Idade aproximada: ${idade}` : null,
+            tutor_id: user?.id
+          }).select().single();
+        if (insertError) throw insertError;
+        petId = newPet.id;
+        toast.success('Pet cadastrado com sucesso!');
+      }
 
-        if (!uploadError) {
+      if (foto && petId) {
+        const fileExt = foto.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user?.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage.from('pets').upload(filePath, foto);
+        if (uploadError) {
+          console.error('Erro no upload da foto:', uploadError);
+          toast.warning('Salvo, mas erro na foto.');
+        } else {
           const { data: publicUrlData } = supabase.storage.from('pets').getPublicUrl(filePath);
           await supabase.from('fotos_pet').insert({
-            pet_id: newPet.id,
-            url: publicUrlData.publicUrl,
-            is_principal: true
+            pet_id: petId, url: publicUrlData.publicUrl, is_principal: true
           });
         }
       }
-
-      toast.success('Pet cadastrado com sucesso!');
       setIsModalOpen(false);
       resetForm();
       fetchPets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao salvar:', error);
-      toast.error(`Erro: ${(error as any).message || JSON.stringify(error)}`);
+      toast.error(`Erro: ${error.message || JSON.stringify(error)}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const resetForm = () => {
-    setNome('');
-    setEspecie('CACHORRO');
-    setPorte('MEDIO');
-    setIdade('');
-    setStatus('DISPONIVEL');
-    setFoto(null);
-  };
-
-  const getPrincipalPhoto = (fotos: any[]) => {
-    if (!fotos || fotos.length === 0) return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400';
-    const principal = fotos.find(f => f.is_principal);
-    return principal ? principal.url : fotos[0].url;
-  };
-
-  const filteredPets = pets.filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Gestão de Pets</h1>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4" /> Novo Pet
+        <button onClick={openNewModal} className="w-full sm:w-auto bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 font-medium">
+          <Plus className="w-5 h-5" /> Novo Pet
         </button>
       </div>
 
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col lg:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full lg:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input 
             type="text" 
-            placeholder="Buscar por nome..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+            placeholder="Buscar por nome..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
         </div>
-        
-        <div className="flex flex-wrap gap-2 w-full lg:w-auto items-center">
-          <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md \${viewMode === 'grid' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}
-            >
-              <LayoutGrid className="w-4 h-4" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              <LayoutGrid className="w-5 h-5" />
             </button>
-            <button 
-              onClick={() => setViewMode('lista')}
-              className={`p-1.5 rounded-md \${viewMode === 'lista' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500'}`}
-            >
-              <List className="w-4 h-4" />
+            <button onClick={() => setViewMode('lista')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'lista' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              <List className="w-5 h-5" />
             </button>
           </div>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
-        </div>
-      ) : filteredPets.length === 0 ? (
-        <div className="text-center p-12 bg-white rounded-xl border border-gray-200">
-          <p className="text-gray-500">Nenhum animal cadastrado ainda.</p>
-        </div>
+        <div className="flex justify-center p-12"><div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div></div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPets.map((pet) => (
-            <div key={pet.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow group relative">
-              <div className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-medium z-10 \${
-                pet.status === 'para_adocao' ? 'bg-emerald-100 text-emerald-800' : 
-                pet.status === 'adotado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-              }`}>
-                {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
-              </div>
-              <div className="aspect-square bg-gray-200 relative overflow-hidden">
-                <img src={getPrincipalPhoto(pet.fotos_pet)} alt={pet.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+            <div key={pet.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                <img src={getPrincipalPhoto(pet.fotos_pet)} alt={pet.nome} className="w-full h-full object-cover" />
+                <div className="absolute top-3 right-3">
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium \${pet.status === 'para_adocao' ? 'bg-emerald-100/90 text-emerald-800' : 'bg-white/90 text-gray-800'}`}>
+                    {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
+                  </span>
+                </div>
               </div>
               <div className="p-4">
-                <h3 className="font-bold text-gray-900 text-lg">{pet.nome}</h3>
-                <p className="text-sm text-gray-500 mb-3">{(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {pet.observacoes || 'Idade desconhecida'}</p>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-bold text-lg text-gray-900">{pet.nome}</h3>
+                </div>
+                <p className="text-sm text-gray-500 mb-1">
+                  {(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • {pet.sexo === 'femea' ? 'Fêmea' : 'Macho'} • {pet.observacoes || 'Idade desconhecida'}
+                </p>
+                <p className="text-xs text-emerald-600 font-medium mb-4">
+                  Tutor: {pet.tutor_nome}
+                </p>
                 <div className="flex gap-2">
                   <button onClick={() => openEditModal(pet)} className="flex-1 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex justify-center items-center gap-1">
                     <Edit className="w-3.5 h-3.5" /> Editar
@@ -215,15 +244,12 @@ export default function GestaoPets() {
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">{pet.nome}</p>
-                      <p className="text-xs text-gray-500">{(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'}</p>
+                      <p className="text-xs text-gray-500">{(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • Tutor: {pet.tutor_nome}</p>
                     </div>
                   </td>
                   <td className="p-4 text-gray-700">{pet.observacoes || '-'} • {pet.porte}</td>
                   <td className="p-4">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium \${
-                      pet.status === 'para_adocao' ? 'bg-emerald-100 text-emerald-800' : 
-                      pet.status === 'adotado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium \${pet.status === 'para_adocao' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'}`}>
                       {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
                     </span>
                   </td>
@@ -242,7 +268,6 @@ export default function GestaoPets() {
         </div>
       )}
 
-      {/* Modal Novo Pet (Simplificado para o MVP) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
@@ -256,34 +281,20 @@ export default function GestaoPets() {
             <form onSubmit={handleSavePet} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Animal</label>
-                <input 
-                  type="text" 
-                  required
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" 
-                />
+                <input type="text" required value={nome} onChange={(e) => setNome(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Espécie</label>
-                  <select 
-                    value={especie}
-                    onChange={(e) => setEspecie(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  >
+                  <select value={especie} onChange={(e) => setEspecie(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
                     <option value="cao">Cachorro</option>
                     <option value="gato">Gato</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Porte</label>
-                  <select 
-                    value={porte}
-                    onChange={(e) => setPorte(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  >
+                  <select value={porte} onChange={(e) => setPorte(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
                     <option value="pequeno">Pequeno</option>
                     <option value="medio">Médio</option>
                     <option value="grande">Grande</option>
@@ -294,21 +305,11 @@ export default function GestaoPets() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Idade Aproximada</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ex: 2 anos"
-                    value={idade}
-                    onChange={(e) => setIdade(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" 
-                  />
+                  <input type="text" placeholder="Ex: 2 anos" value={idade} onChange={(e) => setIdade(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status Inicial</label>
-                  <select 
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  >
+                  <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
                     <option value="para_adocao">Disponível para Adoção</option>
                     <option value="em_tratamento">Em Tratamento</option>
                   </select>
@@ -317,28 +318,13 @@ export default function GestaoPets() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Foto Principal</label>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={(e) => setFoto(e.target.files?.[0] || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" 
-                />
+                <input type="file" accept="image/*" onChange={(e) => setFoto(e.target.files?.[0] || null)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
               </div>
 
               <div className="pt-4 flex gap-3">
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-70 flex justify-center items-center"
-                >
-                  {saving ? 'Salvando...' : editingPet ? 'Atualizar' : 'Cadastrar'}
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">Cancelar</button>
+                <button type="submit" disabled={saving} className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-70 flex justify-center items-center">
+                  {saving ? 'Salvando...' : editingPet ? 'Atualizar Pet' : 'Cadastrar Pet'}
                 </button>
               </div>
             </form>
