@@ -62,7 +62,7 @@ const NovoPet = () => {
         await new Promise((resolve) => {
           logoImg.onload = resolve;
           logoImg.onerror = resolve;
-          logoImg.src = '/paw-logo.svg';
+          logoImg.src = '/full-logo.png';
         });
 
         let blobToDraw: Blob = file;
@@ -115,31 +115,23 @@ const NovoPet = () => {
             ctx.shadowBlur = 0;
             ctx.shadowOffsetY = 0;
             
-            const fontSize = Math.max(24, canvas.height * 0.04);
-            const bannerHeight = fontSize * 2.5;
+            const bannerHeight = Math.max(60, canvas.height * 0.12);
             
-            ctx.fillStyle = '#059669';
+            // Fundo do banner branco para destacar a logo
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
             
-            ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textBaseline = 'middle';
-            
-            const text = 'PetConecta BR';
-            const textWidth = ctx.measureText(text).width;
-            const logoSize = fontSize * 1.2;
-            const gap = 10;
-            const totalWidth = logoSize + gap + textWidth;
-            
-            const startX = (canvas.width - totalWidth) / 2;
-            const centerY = canvas.height - (bannerHeight / 2);
-            
+            // Desenha a logo inteira centralizada
             if (typeof logoImg !== 'undefined' && logoImg.complete && logoImg.naturalHeight !== 0) {
-              ctx.drawImage(logoImg, startX, centerY - (logoSize / 2), logoSize, logoSize);
+              const logoAspect = logoImg.naturalWidth / logoImg.naturalHeight;
+              const drawHeight = bannerHeight * 0.6; // Ocupa 60% da altura do banner
+              const drawWidth = drawHeight * logoAspect;
+              
+              const drawX = (canvas.width - drawWidth) / 2;
+              const drawY = canvas.height - bannerHeight + (bannerHeight - drawHeight) / 2;
+              
+              ctx.drawImage(logoImg, drawX, drawY, drawWidth, drawHeight);
             }
-            
-            ctx.textAlign = 'left';
-            ctx.fillText(text, startX + logoSize + gap, centerY);
               
             canvas.toBlob((blob) => {
               if (!blob) return reject('Blob error');
