@@ -239,7 +239,7 @@ export default function GestaoPets() {
         const { error: updateError } = await supabase
           .from('pets')
           .update({
-            nome, especie, porte, status,
+            nome, especie, porte, status, raca, sexo, castrado, vacinado,
             observacoes: idade ? `Idade aproximada: ${idade}` : null,
           })
           .eq('id', editingPet.id);
@@ -249,7 +249,7 @@ export default function GestaoPets() {
         const { data: newPet, error: insertError } = await supabase
           .from('pets')
           .insert({
-            nome, especie, porte, status, sexo: 'femea', castrado: false,
+            nome, especie, porte, status, raca, sexo, castrado, vacinado,
             observacoes: idade ? `Idade aproximada: ${idade}` : null,
             tutor_id: user?.id
           }).select().single();
