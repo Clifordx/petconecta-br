@@ -21,7 +21,7 @@ export default function AnimaisAdocao() {
       const { data, error } = await supabase
         .from('pets')
         .select('*, fotos_pet(url, is_principal)')
-        .eq('status', 'DISPONIVEL')
+        .eq('status', 'para_adocao')
         .order('criado_em', { ascending: false });
 
       if (error) throw error;

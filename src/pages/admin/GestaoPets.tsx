@@ -18,10 +18,10 @@ export default function GestaoPets() {
   
   // New Pet Form state
   const [nome, setNome] = useState('');
-  const [especie, setEspecie] = useState('CACHORRO');
-  const [porte, setPorte] = useState('MEDIO');
+  const [especie, setEspecie] = useState('cao');
+  const [porte, setPorte] = useState('medio');
   const [idade, setIdade] = useState('');
-  const [status, setStatus] = useState('DISPONIVEL');
+  const [status, setStatus] = useState('para_adocao');
   const [foto, setFoto] = useState<File | null>(null);
 
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function GestaoPets() {
           especie,
           porte,
           status,
-          sexo: 'MACHO',
+          sexo: 'femea', // default para Shakira, mas vamos aceitar femea
           castrado: false,
           observacoes: idade ? `Idade aproximada: ${idade}` : null,
           tutor_id: user?.id
@@ -171,10 +171,10 @@ export default function GestaoPets() {
           {filteredPets.map((pet) => (
             <div key={pet.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow group relative">
               <div className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-medium z-10 \${
-                pet.status === 'DISPONIVEL' ? 'bg-emerald-100 text-emerald-800' : 
-                pet.status === 'ADOTADO' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                pet.status === 'para_adocao' ? 'bg-emerald-100 text-emerald-800' : 
+                pet.status === 'adotado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
               }`}>
-                {pet.status === 'DISPONIVEL' ? 'Para Adoção' : pet.status}
+                {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
               </div>
               <div className="aspect-square bg-gray-200 relative overflow-hidden">
                 <img src={getPrincipalPhoto(pet.fotos_pet)} alt={pet.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -217,10 +217,10 @@ export default function GestaoPets() {
                   <td className="p-4 text-gray-700">{pet.observacoes || '-'} • {pet.porte}</td>
                   <td className="p-4">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium \${
-                      pet.status === 'DISPONIVEL' ? 'bg-emerald-100 text-emerald-800' : 
-                      pet.status === 'ADOTADO' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                      pet.status === 'para_adocao' ? 'bg-emerald-100 text-emerald-800' : 
+                      pet.status === 'adotado' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                     }`}>
-                      {pet.status === 'DISPONIVEL' ? 'Para Adoção' : pet.status}
+                      {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
                     </span>
                   </td>
                   <td className="p-4 text-right">
@@ -266,8 +266,8 @@ export default function GestaoPets() {
                     onChange={(e) => setEspecie(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="CACHORRO">Cachorro</option>
-                    <option value="GATO">Gato</option>
+                    <option value="cao">Cachorro</option>
+                    <option value="gato">Gato</option>
                   </select>
                 </div>
                 <div>
@@ -277,9 +277,9 @@ export default function GestaoPets() {
                     onChange={(e) => setPorte(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="PEQUENO">Pequeno</option>
-                    <option value="MEDIO">Médio</option>
-                    <option value="GRANDE">Grande</option>
+                    <option value="pequeno">Pequeno</option>
+                    <option value="medio">Médio</option>
+                    <option value="grande">Grande</option>
                   </select>
                 </div>
               </div>
@@ -302,8 +302,8 @@ export default function GestaoPets() {
                     onChange={(e) => setStatus(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="DISPONIVEL">Disponível para Adoção</option>
-                    <option value="EM_TRATAMENTO">Em Tratamento</option>
+                    <option value="para_adocao">Disponível para Adoção</option>
+                    <option value="em_tratamento">Em Tratamento</option>
                   </select>
                 </div>
               </div>
