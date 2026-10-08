@@ -22,6 +22,7 @@ export default function GestaoPets() {
   const [idade, setIdade] = useState('');
   const [status, setStatus] = useState('para_adocao');
   const [foto, setFoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const [isProcessingImage, setIsProcessingImage] = useState(false);
@@ -82,11 +83,13 @@ export default function GestaoPets() {
         });
         
         setFoto(processedFile);
+        setPreview(URL.createObjectURL(processedFile));
         toast.success('Fundo removido com sucesso!');
       } catch (error) {
         console.error('Erro ao processar imagem:', error);
         toast.error('Não foi possível remover o fundo automaticamente. Usando foto original.');
         setFoto(file);
+        setPreview(URL.createObjectURL(file));
       } finally {
         setIsProcessingImage(false);
       }
@@ -155,6 +158,7 @@ export default function GestaoPets() {
       setIdade('');
     }
     setFoto(null);
+    setPreview(pet.fotos_pet?.[0]?.url || null);
     setIsModalOpen(true);
   };
 
@@ -166,6 +170,7 @@ export default function GestaoPets() {
     setIdade('');
     setStatus('para_adocao');
     setFoto(null);
+    setPreview(null);
   };
 
   const openNewModal = () => {
@@ -268,7 +273,7 @@ export default function GestaoPets() {
           {filteredPets.map((pet) => (
             <div key={pet.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
               <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                <img src={getPrincipalPhoto(pet.fotos_pet)} alt={pet.nome} className="w-full h-full object-cover" />
+                <img src={getPrincipalPhoto(pet.fotos_pet)} alt={pet.nome} className="w-full h-full object-contain p-2" />
                 <div className="absolute top-3 right-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium \${pet.status === 'para_adocao' ? 'bg-emerald-100/90 text-emerald-800' : 'bg-white/90 text-gray-800'}`}>
                     {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
@@ -391,8 +396,18 @@ export default function GestaoPets() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Foto Principal</label>
-                <input type="file" accept="image/*" onChange={handleFotoChange}
-                  disabled={isProcessingImage} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+                <input type="file" accept="image/*" onChange={handleFotoChange} disabled={isProcessingImage} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+                {isProcessingImage && (
+                  <div className="flex items-center justify-center py-4 bg-gray-50 rounded-lg border border-gray-200 mt-2">
+                    <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <span className="text-sm text-gray-600">A IA está processando o fundo da foto...</span>
+                  </div>
+                )}
+                {preview && !isProcessingImage && (
+                  <div className="mt-3 relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50 flex justify-center h-48">
+                    <img src={preview} alt="Preview" className="h-full w-auto object-contain" />
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 flex gap-3">
