@@ -26,58 +26,86 @@ export default function GestaoPets() {
   const [saving, setSaving] = useState(false);
 
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [useAI, setUseAI] = useState(true);
 
+  
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setIsProcessingImage(true);
-      try {
-        toast.info('Criando foto de estúdio com IA...', { duration: 4000 });
-        
-        
-        // Carrega o logo do PetConecta antes de processar
-        const logoImg = new Image();
-        await new Promise((resolve) => {
-          logoImg.onload = resolve;
-          logoImg.onerror = resolve; // Continue even if logo fails to load
-          logoImg.src = '/paw-logo.png';
-        });
-        
-        const transparentBlob = await removeBackground(file);
-        
-        const processedFile = await new Promise<File>((resolve, reject) => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return reject('Context error');
-            
-            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            gradient.addColorStop(0, '#ffffff');
-            gradient.addColorStop(1, '#f1f5f9');
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
+    if (!file) {
+      setFoto(null);
+      setPreview(null);
+      return;
+    }
+
+    setIsProcessingImage(true);
+    try {
+      const logoImg = new Image();
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve;
+        logoImg.src = '/paw-logo.svg';
+      });
+
+      let blobToDraw: Blob = file;
+
+      if (useAI) {
+        toast.info('Processando foto...', { duration: 2000 });
+        try {
+          blobToDraw = await removeBackground(file);
+        } catch (e) {
+          console.error("AI error", e);
+          toast.warning('A IA não conseguiu remover o fundo. Usando foto original.');
+          blobToDraw = file;
+        }
+      }
+
+      const processedFile = await new Promise<File>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          
+          // Mante as proporções
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          
+          // Se for muito grande, redimensiona para otimizar
+          const MAX_SIZE = 1200;
+          if (targetWidth > MAX_SIZE || targetHeight > MAX_SIZE) {
+            const ratio = Math.min(MAX_SIZE / targetWidth, MAX_SIZE / targetHeight);
+            targetWidth *= ratio;
+            targetHeight *= ratio;
+          }
+          
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject('Context error');
+          
+          // Fundo (só aparece se a imagem tiver transparência)
+          const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+          gradient.addColorStop(0, '#ffffff');
+          gradient.addColorStop(1, '#f1f5f9');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          if (useAI) {
             ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
             ctx.shadowBlur = 40;
             ctx.shadowOffsetY = 20;
-            
-            ctx.drawImage(img, 0, 0);
-            
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetY = 0;
-            
-            const fontSize = Math.max(24, canvas.height * 0.04);
-            const bannerHeight = fontSize * 2.5;
-            
-            // Draw banner background at bottom
-          ctx.fillStyle = '#059669'; // emerald-600
+          }
+          
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 0;
+          
+          const fontSize = Math.max(24, canvas.height * 0.04);
+          const bannerHeight = fontSize * 2.5;
+          
+          ctx.fillStyle = '#059669';
           ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
           
-          // Draw text configuration
           ctx.fillStyle = '#ffffff';
           ctx.font = `bold ${fontSize}px sans-serif`;
           ctx.textBaseline = 'middle';
@@ -91,38 +119,35 @@ export default function GestaoPets() {
           const startX = (canvas.width - totalWidth) / 2;
           const centerY = canvas.height - (bannerHeight / 2);
           
-          // If logoImg is available, draw it
           if (typeof logoImg !== 'undefined' && logoImg.complete && logoImg.naturalHeight !== 0) {
             ctx.drawImage(logoImg, startX, centerY - (logoSize / 2), logoSize, logoSize);
           }
           
           ctx.textAlign = 'left';
           ctx.fillText(text, startX + logoSize + gap, centerY);
-            
-            canvas.toBlob((blob) => {
-              if (!blob) return reject('Blob error');
-              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg' });
-              resolve(newFile);
-            }, 'image/jpeg', 0.9);
-          };
-          img.src = URL.createObjectURL(transparentBlob);
-        });
-        
-        setFoto(processedFile);
-        setPreview(URL.createObjectURL(processedFile));
-        toast.success('Fundo removido com sucesso!');
-      } catch (error) {
-        console.error('Erro ao processar imagem:', error);
-        toast.error('Não foi possível remover o fundo automaticamente. Usando foto original.');
-        setFoto(file);
-        setPreview(URL.createObjectURL(file));
-      } finally {
-        setIsProcessingImage(false);
-      }
-    } else {
-      setFoto(null);
+          
+          canvas.toBlob((blob) => {
+            if (!blob) return reject('Blob error');
+            const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: 'image/jpeg' });
+            resolve(newFile);
+          }, 'image/jpeg', 0.9);
+        };
+        img.src = URL.createObjectURL(blobToDraw);
+      });
+      
+      setFoto(processedFile);
+      setPreview(URL.createObjectURL(processedFile));
+      if (useAI) toast.success('Fundo removido!');
+    } catch (error) {
+      console.error('Erro geral ao processar imagem:', error);
+      toast.error('Erro ao processar. Usando foto original.');
+      setFoto(file);
+      setPreview(URL.createObjectURL(file));
+    } finally {
+      setIsProcessingImage(false);
     }
   };
+  
 
 
   useEffect(() => {
@@ -420,8 +445,20 @@ export default function GestaoPets() {
                 </div>
               </div>
 
+              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Foto Principal</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Foto Principal</label>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={useAI}
+                      onChange={(e) => setUseAI(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    Recortar fundo com IA
+                  </label>
+                </div>
                 <input type="file" accept="image/*" onChange={handleFotoChange} disabled={isProcessingImage} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
                 {isProcessingImage && (
                   <div className="flex items-center justify-center py-4 bg-gray-50 rounded-lg border border-gray-200 mt-2">

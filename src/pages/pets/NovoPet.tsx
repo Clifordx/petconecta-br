@@ -66,7 +66,7 @@ const NovoPet = () => {
         await new Promise((resolve) => {
           logoImg.onload = resolve;
           logoImg.onerror = resolve; // Continue even if logo fails to load
-          logoImg.src = '/paw-logo.png';
+          logoImg.src = '/paw-logo.svg';
         });
         
         const transparentBlob = await removeBackground(file);
