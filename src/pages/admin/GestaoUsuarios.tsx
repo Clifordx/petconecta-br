@@ -20,7 +20,7 @@ export default function GestaoUsuarios() {
       const { data, error } = await supabase
         .from('perfis')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('criado_em', { ascending: false });
 
       if (error) throw error;
       setUsuarios(data || []);
