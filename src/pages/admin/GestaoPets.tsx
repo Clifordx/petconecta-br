@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, LayoutGrid, List, Heart, Edit, Camera, X } from 'lucide-react';
+import { Search, Plus, Filter, LayoutGrid, List, Heart, Edit, Trash2, Camera, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Pet } from '@/types';
 import { toast } from 'sonner';
@@ -22,6 +22,7 @@ export default function GestaoPets() {
   const [porte, setPorte] = useState('medio');
   const [idade, setIdade] = useState('');
   const [status, setStatus] = useState('para_adocao');
+  const [editingPet, setEditingPet] = useState<any>(null);
   const [foto, setFoto] = useState<File | null>(null);
 
   useEffect(() => {
@@ -240,7 +241,7 @@ export default function GestaoPets() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-              <h2 className="text-xl font-bold text-gray-900">Cadastrar Novo Pet</h2>
+              <h2 className="text-xl font-bold text-gray-900">{editingPet ? 'Editar Pet' : 'Cadastrar Novo Pet'}</h2>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
                 <X className="w-6 h-6" />
               </button>
@@ -331,7 +332,7 @@ export default function GestaoPets() {
                   disabled={saving}
                   className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-70 flex justify-center items-center"
                 >
-                  {saving ? 'Salvando...' : 'Cadastrar Pet'}
+                  {saving ? 'Salvando...' : editingPet ? 'Atualizar' : 'Cadastrar'}
                 </button>
               </div>
             </form>
