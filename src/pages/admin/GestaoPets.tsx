@@ -21,6 +21,10 @@ export default function GestaoPets() {
   const [porte, setPorte] = useState('medio');
   const [idade, setIdade] = useState('');
   const [status, setStatus] = useState('para_adocao');
+  const [raca, setRaca] = useState('');
+  const [sexo, setSexo] = useState('femea');
+  const [castrado, setCastrado] = useState(false);
+  const [vacinado, setVacinado] = useState(false);
   const [foto, setFoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
