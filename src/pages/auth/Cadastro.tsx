@@ -68,6 +68,14 @@ const Cadastro = () => {
           setValue('bairro', data.bairro);
           setValue('cidade', data.localidade);
           setValue('estado', data.uf);
+          clearErrors('cep');
+        } else {
+          toast.error('CEP inválido ou não encontrado na base dos Correios.');
+          setError('cep', { type: 'manual', message: 'CEP inválido' });
+          setValue('endereco', '');
+          setValue('bairro', '');
+          setValue('cidade', '');
+          setValue('estado', '');
         }
       } catch (err) {
         toast.error('Erro ao buscar CEP');
