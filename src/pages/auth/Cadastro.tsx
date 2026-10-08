@@ -40,7 +40,7 @@ const Cadastro = () => {
   const [docFile, setDocFile] = useState<File | null>(null);
   const [profileFile, setProfileFile] = useState<File | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue, trigger } = useForm<CadastroForm>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue, trigger, clearErrors, setError } = useForm<CadastroForm>({
     resolver: zodResolver(cadastroSchema),
     mode: 'onTouched'
   });
