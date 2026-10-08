@@ -176,8 +176,12 @@ export default function GestaoPets() {
 
   const getPrincipalPhoto = (fotos: any[]) => {
     if (!fotos || fotos.length === 0) return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800';
-    const principal = fotos.find(f => f.is_principal);
-    return principal ? principal.url : fotos[0].url;
+    // Se tiver várias fotos principais, pega a ÚLTIMA (mais recente)
+    const principais = fotos.filter(f => f.is_principal);
+    if (principais.length > 0) {
+      return principais[principais.length - 1].url;
+    }
+    return fotos[fotos.length - 1].url;
   };
 
   const filteredPets = pets.filter(pet => 
@@ -269,6 +273,10 @@ export default function GestaoPets() {
           toast.warning('Salvo, mas erro na foto.');
         } else {
           const { data: publicUrlData } = supabase.storage.from('pets').getPublicUrl(filePath);
+          
+          // Desmarca fotos antigas como principais (ou deleta para economizar espaço)
+          await supabase.from('fotos_pet').update({ is_principal: false }).eq('pet_id', petId);
+          
           await supabase.from('fotos_pet').insert({
             pet_id: petId, url: publicUrlData.publicUrl, is_principal: true
           });
