@@ -60,6 +60,15 @@ const NovoPet = () => {
         toast.info('Criando foto de estúdio com IA...', { duration: 4000 });
         
         // Remove background (returns transparent PNG blob)
+        
+        // Carrega o logo do PetConecta antes de processar
+        const logoImg = new Image();
+        await new Promise((resolve) => {
+          logoImg.onload = resolve;
+          logoImg.onerror = resolve; // Continue even if logo fails to load
+          logoImg.src = '/paw-logo.png';
+        });
+        
         const transparentBlob = await removeBackground(file);
         
         // Draw on white background and convert to smaller JPG
@@ -98,12 +107,27 @@ const NovoPet = () => {
           ctx.fillStyle = '#059669'; // emerald-600
           ctx.fillRect(0, canvas.height - bannerHeight, canvas.width, bannerHeight);
           
-          // Draw text
+          // Draw text configuration
           ctx.fillStyle = '#ffffff';
           ctx.font = `bold ${fontSize}px sans-serif`;
-          ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('🐾 PetConecta BR', canvas.width / 2, canvas.height - (bannerHeight / 2));
+          
+          const text = 'PetConecta BR';
+          const textWidth = ctx.measureText(text).width;
+          const logoSize = fontSize * 1.2;
+          const gap = 10;
+          const totalWidth = logoSize + gap + textWidth;
+          
+          const startX = (canvas.width - totalWidth) / 2;
+          const centerY = canvas.height - (bannerHeight / 2);
+          
+          // If logoImg is available, draw it
+          if (typeof logoImg !== 'undefined' && logoImg.complete && logoImg.naturalHeight !== 0) {
+            ctx.drawImage(logoImg, startX, centerY - (logoSize / 2), logoSize, logoSize);
+          }
+          
+          ctx.textAlign = 'left';
+          ctx.fillText(text, startX + logoSize + gap, centerY);
             
             canvas.toBlob((blob) => {
               if (!blob) return reject('Blob error');
