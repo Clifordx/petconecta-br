@@ -93,7 +93,7 @@ export default function GestaoPets() {
       fetchPets();
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      toast.error('Erro ao cadastrar o animal.');
+      toast.error(`Erro: ${error.message || JSON.stringify(error)}`);
     } finally {
       setSaving(false);
     }
