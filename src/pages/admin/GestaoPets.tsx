@@ -37,7 +37,7 @@ export default function GestaoPets() {
         .order('criado_em', { ascending: false });
 
       if (error) throw error;
-      setPets(data || []);
+      
     } catch (error) {
       console.error('Erro ao buscar pets:', error);
       toast.error('Erro ao carregar os animais.');
@@ -184,8 +184,11 @@ export default function GestaoPets() {
                 <h3 className="font-bold text-gray-900 text-lg">{pet.nome}</h3>
                 <p className="text-sm text-gray-500 mb-3">{(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {pet.observacoes || 'Idade desconhecida'}</p>
                 <div className="flex gap-2">
-                  <button className="flex-1 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex justify-center items-center gap-1">
+                  <button onClick={() => openEditModal(pet)} className="flex-1 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex justify-center items-center gap-1">
                     <Edit className="w-3.5 h-3.5" /> Editar
+                  </button>
+                  <button onClick={() => handleDeletePet(pet.id)} className="py-1.5 px-3 text-sm font-medium border border-red-200 rounded-lg hover:bg-red-50 text-red-600 flex justify-center items-center">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -225,8 +228,11 @@ export default function GestaoPets() {
                     </span>
                   </td>
                   <td className="p-4 text-right">
-                    <button className="text-gray-400 hover:text-emerald-600">
+                    <button onClick={() => openEditModal(pet)} className="text-gray-400 hover:text-emerald-600 mr-2">
                       <Edit className="w-4 h-4 inline-block" />
+                    </button>
+                    <button onClick={() => handleDeletePet(pet.id)} className="text-gray-400 hover:text-red-600">
+                      <Trash2 className="w-4 h-4 inline-block" />
                     </button>
                   </td>
                 </tr>
