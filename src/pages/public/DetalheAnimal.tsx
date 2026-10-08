@@ -75,7 +75,7 @@ export default function DetalheAnimal() {
               <div>
                 <h1 className="text-4xl font-bold text-gray-900 mb-2">{animal.nome}</h1>
                 <p className="text-lg text-gray-500">
-                  {animal.especie === 'CACHORRO' ? 'Cão' : animal.especie === 'GATO' ? 'Gato' : animal.especie} • {animal.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {animal.raca || 'Sem Raça Definida (SRD)'}
+                  {(animal.especie === 'CACHORRO' || animal.especie === 'cao' || animal.especie === 'cão' || animal.especie === 'Cão') ? 'Cão' : 'Gato'} • {animal.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {animal.raca || 'Sem Raça Definida (SRD)'}
                 </p>
               </div>
               <div className="flex gap-2">

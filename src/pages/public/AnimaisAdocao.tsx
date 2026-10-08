@@ -34,8 +34,10 @@ export default function AnimaisAdocao() {
   };
 
   const filteredAnimais = animais.filter(animal => {
-    if (filter !== 'todos' && animal.especie.toLowerCase() !== filter.toLowerCase()) {
-      return false;
+    if (filter !== 'todos') {
+      const isCachorro = animal.especie.toLowerCase() === 'cachorro' || animal.especie.toLowerCase() === 'cao' || animal.especie.toLowerCase() === 'cão';
+      if (filter === 'CACHORRO' && !isCachorro) return false;
+      if (filter === 'GATO' && isCachorro) return false;
     }
     if (search && !animal.nome.toLowerCase().includes(search.toLowerCase())) {
       return false;
@@ -97,7 +99,7 @@ export default function AnimaisAdocao() {
                 <div className="flex justify-between items-end mb-2">
                   <h3 className="text-xl font-bold text-gray-900">{animal.nome}</h3>
                   <span className="text-xs font-medium px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full">
-                    {animal.especie === 'CACHORRO' ? 'Cão' : animal.especie === 'GATO' ? 'Gato' : animal.especie}
+                    {(animal.especie === 'CACHORRO' || animal.especie === 'cao' || animal.especie === 'cão' || animal.especie === 'Cão') ? 'Cão' : 'Gato'}
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 mb-4">{animal.raca || 'SRD'} • {animal.observacoes || 'Idade desconhecida'} • {animal.porte}</p>

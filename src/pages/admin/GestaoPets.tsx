@@ -3,8 +3,10 @@ import { Search, Plus, Filter, LayoutGrid, List, Heart, Edit, Camera, X } from '
 import { supabase } from '@/lib/supabase';
 import { Pet } from '@/types';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function GestaoPets() {
+  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'grid' | 'lista'>('grid');
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +57,10 @@ export default function GestaoPets() {
           especie,
           porte,
           status,
-          sexo: 'MACHO', // default for MVP
+          sexo: 'MACHO',
           castrado: false,
-          observacoes: idade ? `Idade aproximada: ${idade}` : null
+          observacoes: idade ? `Idade aproximada: ${idade}` : null,
+          tutor_id: user?.id
         })
         .select()
         .single();
@@ -178,7 +181,7 @@ export default function GestaoPets() {
               </div>
               <div className="p-4">
                 <h3 className="font-bold text-gray-900 text-lg">{pet.nome}</h3>
-                <p className="text-sm text-gray-500 mb-3">{pet.especie === 'CACHORRO' ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {pet.observacoes || 'Idade desconhecida'}</p>
+                <p className="text-sm text-gray-500 mb-3">{(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'} • {pet.observacoes || 'Idade desconhecida'}</p>
                 <div className="flex gap-2">
                   <button className="flex-1 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex justify-center items-center gap-1">
                     <Edit className="w-3.5 h-3.5" /> Editar
@@ -208,7 +211,7 @@ export default function GestaoPets() {
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">{pet.nome}</p>
-                      <p className="text-xs text-gray-500">{pet.especie === 'CACHORRO' ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'}</p>
+                      <p className="text-xs text-gray-500">{(pet.especie === 'CACHORRO' || pet.especie === 'cao' || pet.especie === 'cão' || pet.especie === 'Cão') ? 'Cão' : 'Gato'} • {pet.sexo === 'FEMEA' ? 'Fêmea' : 'Macho'}</p>
                     </div>
                   </td>
                   <td className="p-4 text-gray-700">{pet.observacoes || '-'} • {pet.porte}</td>
