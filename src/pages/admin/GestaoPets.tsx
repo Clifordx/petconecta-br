@@ -37,7 +37,7 @@ export default function GestaoPets() {
 
       if (error) throw error;
       setPets(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar pets:', error);
       toast.error('Erro ao carregar os animais.');
     } finally {
