@@ -160,8 +160,8 @@ export default function GestaoClinicas() {
       return;
     }
     // Adiciona o código do Brasil 55 caso não tenha sido digitado
-    const phoneWithCode = numbersOnly.length <= 11 ? \`55\${numbersOnly}\` : numbersOnly;
-    window.open(\`https://wa.me/\${phoneWithCode}\`, '_blank');
+    const phoneWithCode = numbersOnly.length <= 11 ? `55\${numbersOnly}` : numbersOnly;
+    window.open(`https://wa.me/\${phoneWithCode}`, '_blank');
   };
 
   const filteredClinicas = clinicas.filter(c => 
