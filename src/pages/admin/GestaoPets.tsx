@@ -198,10 +198,14 @@ export default function GestaoPets() {
 
   const openEditModal = (pet: any) => {
     setEditingPet(pet);
-    setNome(pet.nome);
-    setEspecie(pet.especie);
-    setPorte(pet.porte);
-    setStatus(pet.status);
+    setNome(pet.nome || '');
+    setEspecie(pet.especie || 'cao');
+    setPorte(pet.porte || 'medio');
+    setStatus(pet.status || 'para_adocao');
+    setRaca(pet.raca || '');
+    setSexo(pet.sexo || 'macho');
+    setCastrado(pet.castrado || false);
+    setVacinado(pet.vacinado || false);
     const obs = pet.observacoes || '';
     if (obs.startsWith('Idade aproximada: ')) {
       setIdade(obs.replace('Idade aproximada: ', ''));
@@ -220,8 +224,29 @@ export default function GestaoPets() {
     setPorte('medio');
     setIdade('');
     setStatus('para_adocao');
+    setRaca('');
+    setSexo('macho');
+    setCastrado(false);
+    setVacinado(false);
     setFoto(null);
     setPreview(null);
+  };
+
+  const renderStatusBadge = (st: string) => {
+    switch (st) {
+      case 'para_adocao':
+        return <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Para Adoção</span>;
+      case 'com_tutor':
+        return <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-blue-100 text-blue-800 border border-blue-200">Com Tutor</span>;
+      case 'adotado':
+        return <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-pink-100 text-pink-800 border border-pink-200">Adotado</span>;
+      case 'em_tratamento':
+        return <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-800 border border-amber-200">Em Tratamento</span>;
+      case 'desaparecido':
+        return <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-red-100 text-red-800 border border-red-200">Desaparecido</span>;
+      default:
+        return <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-gray-100 text-gray-800">{st}</span>;
+    }
   };
 
   const openNewModal = () => {
@@ -330,9 +355,7 @@ export default function GestaoPets() {
               <div className="aspect-square bg-gray-100 relative overflow-hidden">
                 <img src={getPrincipalPhoto(pet.fotos_pet)} alt={pet.nome} className="w-full h-full object-contain p-2" />
                 <div className="absolute top-3 right-3">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium \${pet.status === 'para_adocao' ? 'bg-emerald-100/90 text-emerald-800' : 'bg-white/90 text-gray-800'}`}>
-                    {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
-                  </span>
+                  {renderStatusBadge(pet.status)}
                 </div>
               </div>
               <div className="p-4">
@@ -387,9 +410,7 @@ export default function GestaoPets() {
                   </td>
                   <td className="p-4 text-gray-700">{pet.observacoes || '-'} • {pet.porte}</td>
                   <td className="p-4">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium \${pet.status === 'para_adocao' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {pet.status === 'para_adocao' ? 'Para Adoção' : pet.status}
-                    </span>
+                    {renderStatusBadge(pet.status)}
                   </td>
                   <td className="p-4 text-right">
                     <button onClick={() => openEditModal(pet)} className="text-gray-400 hover:text-emerald-600 mr-2">
@@ -446,10 +467,13 @@ export default function GestaoPets() {
                   <input type="text" placeholder="Ex: 2 anos" value={idade} onChange={(e) => setIdade(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status Inicial</label>
-                  <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status do Pet</label>
+                  <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 font-medium bg-white">
                     <option value="para_adocao">Disponível para Adoção</option>
-                    <option value="em_tratamento">Em Tratamento</option>
+                    <option value="com_tutor">Com Tutor / Família</option>
+                    <option value="adotado">Adotado</option>
+                    <option value="em_tratamento">Em Tratamento Clínico</option>
+                    <option value="desaparecido">Desaparecido / Perdido</option>
                   </select>
                 </div>
               </div>
