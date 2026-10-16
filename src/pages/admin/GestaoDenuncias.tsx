@@ -56,6 +56,7 @@ export default function GestaoDenuncias() {
   const [selectedDenuncia, setSelectedDenuncia] = useState<DenunciaRow | null>(null);
   const [modalDetalhesOpen, setModalDetalhesOpen] = useState(false);
   const [novoStatus, setNovoStatus] = useState('');
+  const [novaUrgencia, setNovaUrgencia] = useState('');
   const [anotacoesInternas, setAnotacoesInternas] = useState('');
   const [salvandoStatus, setSalvandoStatus] = useState(false);
 
@@ -100,6 +101,7 @@ export default function GestaoDenuncias() {
   const abrirModalDetalhes = (item: DenunciaRow) => {
     setSelectedDenuncia(item);
     setNovoStatus(item.status || 'recebida');
+    setNovaUrgencia(item.urgencia || 'media');
     setAnotacoesInternas(item.observacoes_internas || '');
     setModalDetalhesOpen(true);
   };
@@ -108,23 +110,38 @@ export default function GestaoDenuncias() {
     if (!selectedDenuncia) return;
     setSalvandoStatus(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('denuncias')
         .update({
           status: novoStatus,
+          urgencia: novaUrgencia,
           observacoes_internas: anotacoesInternas,
           atualizado_em: new Date().toISOString()
         })
-        .eq('id', selectedDenuncia.id);
+        .eq('id', selectedDenuncia.id)
+        .select();
 
       if (error) throw error;
 
+      if (!data || data.length === 0) {
+        throw new Error('Permissão negada no banco (RLS). Execute o comando de liberação no Supabase.');
+      }
+
       toast.success('Denúncia atualizada com sucesso!');
-      setSelectedDenuncia(prev => prev ? { ...prev, status: novoStatus, observacoes_internas: anotacoesInternas } : null);
+
+      // Atualização imediata no estado local
+      setDenuncias(prev => prev.map(d => 
+        d.id === selectedDenuncia.id 
+          ? { ...d, status: novoStatus, urgencia: novaUrgencia, observacoes_internas: anotacoesInternas } 
+          : d
+      ));
+
+      setSelectedDenuncia(null);
+      setModalDetalhesOpen(false);
       fetchDenuncias();
     } catch (error: any) {
       console.error('Erro ao atualizar denúncia:', error);
-      toast.error('Erro ao salvar atualização');
+      toast.error(error.message || 'Erro ao salvar atualização');
     } finally {
       setSalvandoStatus(false);
     }
@@ -171,7 +188,7 @@ export default function GestaoDenuncias() {
   };
 
   // Contadores de resumo
-  const totalCriticas = denuncias.filter(d => d.urgencia === 'critica').length;
+  const totalCriticas = denuncias.filter(d => d.urgencia === 'critica' && d.status !== 'resolvida' && d.status !== 'arquivada').length;
   const totalRecebidas = denuncias.filter(d => d.status === 'recebida').length;
   const totalEmAndamento = denuncias.filter(d => ['em_analise', 'em_investigacao', 'encaminhada'].includes(d.status)).length;
   const totalResolvidas = denuncias.filter(d => d.status === 'resolvida').length;
@@ -207,9 +224,9 @@ export default function GestaoDenuncias() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'recebida':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Nova / Recebida</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Aguardando Triagem</span>;
       case 'em_analise':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">Em Análise</span>;
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">Em Análise / Triada</span>;
       case 'em_investigacao':
         return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">Em Vistoria</span>;
       case 'encaminhada':
@@ -582,12 +599,26 @@ export default function GestaoDenuncias() {
                     onChange={(e) => setNovoStatus(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white font-medium focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value="recebida">Nova / Recebida</option>
-                    <option value="em_analise">Em Análise / Triagem</option>
+                    <option value="recebida">Nova / Recebida (Aguardando Triagem)</option>
+                    <option value="em_analise">Em Análise (Triagem Realizada)</option>
                     <option value="em_investigacao">Em Investigação / Vistoria Agendada</option>
                     <option value="encaminhada">Encaminhada à Polícia Militar / Ambiental</option>
-                    <option value="resolvida">Resolvida / Animal Resgatado</option>
+                    <option value="resolvida">Resolvida / Concluída</option>
                     <option value="arquivada">Arquivada / Improcedente</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Reclassificar Urgência</label>
+                  <select
+                    value={novaUrgencia}
+                    onChange={(e) => setNovaUrgencia(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-white font-medium focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="critica">🚨 Crítica (Risco Imediato)</option>
+                    <option value="alta">⚠️ Alta Urgência</option>
+                    <option value="media">🟡 Média</option>
+                    <option value="baixa">⚪ Baixa</option>
                   </select>
                 </div>
               </div>
