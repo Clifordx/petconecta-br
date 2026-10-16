@@ -35,6 +35,8 @@ const PetDetalhes = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [modalCarteirinhaOpen, setModalCarteirinhaOpen] = useState(false);
   const [tutor, setTutor] = useState<{ nome?: string; telefone?: string } | null>(null);
+  const [castracaoPet, setCastracaoPet] = useState<{ id: string; status: string } | null>(null);
+  const [consultaPet, setConsultaPet] = useState<{ id: string; status: string; data_consulta?: string } | null>(null);
   const { user } = useAuth();
 
   
@@ -189,6 +191,14 @@ const PetDetalhes = () => {
             .single();
           if (tutorData) setTutor(tutorData);
         }
+
+        // Busca status na fila de castracao
+        const { data: cData } = await supabase.from('filas_castracao').select('id, status').eq('pet_id', id).in('status', ['pendente', 'agendado']).maybeSingle();
+        if (cData) setCastracaoPet(cData);
+
+        // Busca status em consultas
+        const { data: conData } = await supabase.from('consultas').select('id, status, data_consulta').eq('pet_id', id).in('status', ['agendada', 'em_andamento', 'solicitada']).maybeSingle();
+        if (conData) setConsultaPet(conData);
       } catch (error: any) {
         toast.error('Erro ao carregar detalhes do pet');
         navigate('/app/meus-pets');
@@ -376,22 +386,53 @@ const PetDetalhes = () => {
                 <span className="font-bold text-emerald-950 group-hover:text-emerald-700">Carteirinha Digital</span>
                 <span className="text-xs text-emerald-800/80 mt-1">QR Code & RGA Oficial</span>
               </button>
-              <Link 
-                to="/app/filas/castracao"
-                className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all group"
-              >
-                <Scissors className="w-8 h-8 text-gray-400 group-hover:text-emerald-600 mb-3 transition-colors" />
-                <span className="font-medium text-gray-900 group-hover:text-emerald-700">Fila de Castração</span>
-                <span className="text-xs text-gray-500 mt-1">Inscrever animal</span>
-              </Link>
-              <Link 
-                to="/app/filas/consulta"
-                className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group"
-              >
-                <Stethoscope className="w-8 h-8 text-gray-400 group-hover:text-blue-600 mb-3 transition-colors" />
-                <span className="font-medium text-gray-900 group-hover:text-blue-700">Agendar Consulta</span>
-                <span className="text-xs text-gray-500 mt-1">Atendimento clínico</span>
-              </Link>
+              {pet.castrado ? (
+                <div className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 bg-gray-50 text-center opacity-85">
+                  <Scissors className="w-8 h-8 text-emerald-600 mb-3" />
+                  <span className="font-bold text-emerald-800 text-sm">Já Castrado</span>
+                  <span className="text-xs text-gray-500 mt-1">Procedimento realizado</span>
+                </div>
+              ) : castracaoPet ? (
+                <Link 
+                  to="/app/filas?tab=castracao"
+                  className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-amber-300 bg-amber-50/70 hover:bg-amber-100/80 transition-all group text-center"
+                >
+                  <Scissors className="w-8 h-8 text-amber-600 group-hover:scale-110 mb-3 transition-transform" />
+                  <span className="font-bold text-amber-950 group-hover:text-amber-800 text-sm">Inscrito na Fila</span>
+                  <span className="text-xs text-amber-700 font-medium mt-1">Ver posição na fila</span>
+                </Link>
+              ) : (
+                <Link 
+                  to="/app/filas/castracao"
+                  className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all group text-center"
+                >
+                  <Scissors className="w-8 h-8 text-gray-400 group-hover:text-emerald-600 mb-3 transition-colors" />
+                  <span className="font-medium text-gray-900 group-hover:text-emerald-700 text-sm">Fila de Castração</span>
+                  <span className="text-xs text-gray-500 mt-1">Inscrever animal</span>
+                </Link>
+              )}
+
+              {consultaPet ? (
+                <Link 
+                  to="/app/filas?tab=consulta"
+                  className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-blue-300 bg-blue-50/70 hover:bg-blue-100/80 transition-all group text-center"
+                >
+                  <Stethoscope className="w-8 h-8 text-blue-600 group-hover:scale-110 mb-3 transition-transform" />
+                  <span className="font-bold text-blue-950 group-hover:text-blue-800 text-sm">
+                    {consultaPet.data_consulta ? 'Consulta Agendada' : 'Aguardando Triagem'}
+                  </span>
+                  <span className="text-xs text-blue-700 font-medium mt-1">Acompanhar atendimento</span>
+                </Link>
+              ) : (
+                <Link 
+                  to="/app/filas/consulta"
+                  className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group text-center"
+                >
+                  <Stethoscope className="w-8 h-8 text-gray-400 group-hover:text-blue-600 mb-3 transition-colors" />
+                  <span className="font-medium text-gray-900 group-hover:text-blue-700 text-sm">Agendar Consulta</span>
+                  <span className="text-xs text-gray-500 mt-1">Atendimento clínico</span>
+                </Link>
+              )}
             </div>
           </div>
 
