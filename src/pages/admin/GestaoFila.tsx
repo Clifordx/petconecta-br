@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Filter, Download, Calendar as CalendarIcon, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Search, Filter, Download, Calendar as CalendarIcon, CheckCircle, XCircle, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { buildCastracaoMessage, openWhatsApp1Click } from '@/lib/whatsapp';
 
 export default function GestaoFila() {
   const [fila, setFila] = useState<any[]>([]);
@@ -83,7 +84,38 @@ export default function GestaoFila() {
     setIsModalOpen(true);
   };
 
-  const handleAgendar = async (e: React.FormEvent) => {
+  const dispararWhatsAppCastracao = (item: any, customClinicaId?: string, customData?: string) => {
+    const telefone = item.perfis?.telefone;
+    if (!telefone) {
+      toast.warning('Este tutor não possui telefone cadastrado.');
+      return;
+    }
+
+    const cId = customClinicaId || item.clinica_id;
+    const cObj = clinicas.find(c => c.id === cId) || item.clinicas_parceiras;
+    const clinicaNome = cObj?.nome || 'Clínica Conveniada Municipal';
+    const dt = customData || item.data_agendada;
+
+    if (!dt) {
+      toast.warning('O horário da cirurgia ainda não foi definido.');
+      return;
+    }
+
+    const msg = buildCastracaoMessage({
+      tutorNome: item.perfis?.nome || 'Tutor',
+      petNome: item.pets?.nome || 'Animal',
+      especie: item.pets?.especie,
+      raca: item.pets?.raca,
+      clinicaNome: clinicaNome,
+      dataAgendada: dt,
+      cidade: 'Arapongas - PR'
+    });
+
+    openWhatsApp1Click(telefone, msg);
+    toast.success('WhatsApp aberto com as instruções de jejum e agendamento!');
+  };
+
+  const handleAgendar = async (e: React.FormEvent, notificarWhatsApp = false) => {
     e.preventDefault();
     if (!dataAgendada || !clinicaId) {
       toast.error('Selecione uma clínica e uma data válida');
@@ -103,6 +135,11 @@ export default function GestaoFila() {
         
       if (error) throw error;
       toast.success('Castração agendada com sucesso!');
+
+      if (notificarWhatsApp) {
+        dispararWhatsAppCastracao(selectedItem, clinicaId, dataAgendada);
+      }
+
       setIsModalOpen(false);
       fetchData();
     } catch (error) {
@@ -214,7 +251,16 @@ export default function GestaoFila() {
                       {getStatusBadge(item.status)}
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2 items-center">
+                        {item.status === 'agendado' && (
+                          <button 
+                            onClick={() => dispararWhatsAppCastracao(item)}
+                            title="Enviar Comprovante e Jejum no WhatsApp" 
+                            className="p-1.5 text-green-700 bg-green-50 hover:bg-green-100 rounded-md border border-green-200 flex items-center gap-1 text-xs font-semibold px-2 transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5 text-green-600" /> Avisar Tutor
+                          </button>
+                        )}
                         {item.status === 'pendente' && (
                           <button 
                             onClick={() => openAgendarModal(item)}
@@ -293,11 +339,23 @@ export default function GestaoFila() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Agendando...' : 'Confirmar Agendamento'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="submit" disabled={saving} variant="outline" className="text-xs">
+                {saving ? 'Agendando...' : 'Apenas Salvar'}
+              </Button>
+              <Button 
+                type="button" 
+                disabled={saving}
+                onClick={async (e) => {
+                  await handleAgendar(e, true);
+                }}
+                className="bg-green-600 hover:bg-green-700 text-white text-xs flex items-center gap-1.5"
+              >
+                <MessageCircle size={14} /> Salvar e Enviar WhatsApp
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>

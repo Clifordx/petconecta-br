@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
+import { buildConsultaMessage, openWhatsApp1Click } from '@/lib/whatsapp';
 
 export default function GestaoConsultas() {
   const [consultas, setConsultas] = useState<any[]>([]);
@@ -108,7 +109,32 @@ export default function GestaoConsultas() {
     setModalOpen(true);
   };
 
-  const handleSalvar = async (e: React.FormEvent) => {
+  const dispararWhatsAppConsulta = (item: any, customClinicaId?: string, customData?: string) => {
+    const telefone = item.perfis?.telefone;
+    if (!telefone) {
+      toast.warning('Este tutor não possui telefone cadastrado.');
+      return;
+    }
+
+    const cId = customClinicaId || item.clinica_id;
+    const clinicaObj = clinicas.find(c => c.id === cId) || item.clinicas_parceiras;
+    const clinicaNome = clinicaObj?.nome || 'Clínica Municipal Credenciada';
+    const dt = customData || item.data_consulta;
+
+    const msg = buildConsultaMessage({
+      tutorNome: item.perfis?.nome || 'Tutor',
+      petNome: item.pets?.nome || 'Animal',
+      clinicaNome,
+      dataConsulta: dt || new Date(),
+      motivo: item.motivo,
+      cidade: 'Arapongas - PR'
+    });
+
+    openWhatsApp1Click(telefone, msg);
+    toast.success('WhatsApp aberto com a confirmação de consulta!');
+  };
+
+  const handleSalvar = async (e: React.FormEvent, notificarWhatsApp = false) => {
     e.preventDefault();
     if (!selectedConsulta) return;
 
@@ -133,6 +159,11 @@ export default function GestaoConsultas() {
       if (error) throw error;
 
       toast.success('Consulta atualizada com sucesso!');
+
+      if (notificarWhatsApp) {
+        dispararWhatsAppConsulta(selectedConsulta, clinicaId, dataFinal || undefined);
+      }
+
       setModalOpen(false);
       fetchConsultas();
     } catch (error: any) {
@@ -141,14 +172,6 @@ export default function GestaoConsultas() {
     } finally {
       setSaving(false);
     }
-  };
-
-  const openWhatsApp = (telefone: string, petNome: string) => {
-    const clean = telefone.replace(/\D/g, '');
-    if (!clean) return;
-    const phoneFinal = clean.length <= 11 ? `55${clean}` : clean;
-    const msg = encodeURIComponent(`Olá! Entramos em contato a respeito da consulta veterinária do seu pet *${petNome}* agendada pelo PetConecta BR.`);
-    window.open(`https://wa.me/${phoneFinal}?text=${msg}`, '_blank');
   };
 
   const getFotoPrincipal = (fotos: any[]) => {
@@ -270,11 +293,11 @@ export default function GestaoConsultas() {
                         <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500">
                           <span>{item.perfis?.telefone}</span>
                           <button
-                            onClick={() => openWhatsApp(item.perfis?.telefone, item.pets?.nome)}
-                            className="text-green-600 hover:text-green-700 p-0.5 bg-green-50 rounded"
-                            title="Chamar no WhatsApp"
+                            onClick={() => dispararWhatsAppConsulta(item)}
+                            className="text-green-700 hover:text-green-800 px-1.5 py-0.5 bg-green-50 hover:bg-green-100 rounded border border-green-200 flex items-center gap-1 font-semibold text-[11px]"
+                            title="Enviar Confirmação no WhatsApp"
                           >
-                            <MessageCircle size={13} />
+                            <MessageCircle size={12} className="text-green-600" /> WhatsApp
                           </button>
                         </div>
                       )}
@@ -410,13 +433,25 @@ export default function GestaoConsultas() {
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t">
               <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
-                {saving ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button type="submit" disabled={saving} variant="outline" className="text-xs">
+                  {saving ? 'Salvando...' : 'Apenas Salvar'}
+                </Button>
+                <Button 
+                  type="button" 
+                  disabled={saving}
+                  onClick={async (e) => {
+                    await handleSalvar(e, true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs flex items-center gap-1.5"
+                >
+                  <MessageCircle size={14} /> Salvar e Enviar WhatsApp
+                </Button>
+              </div>
             </div>
           </form>
         </Modal>

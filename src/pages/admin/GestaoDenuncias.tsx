@@ -23,6 +23,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { toast } from 'sonner';
+import { buildDenunciaMessage, openWhatsApp1Click } from '@/lib/whatsapp';
 
 interface DenunciaRow {
   id: string;
@@ -106,7 +107,37 @@ export default function GestaoDenuncias() {
     setModalDetalhesOpen(true);
   };
 
-  const handleSalvarAtualizacao = async () => {
+  const dispararWhatsAppDenuncia = (item: DenunciaRow, customStatus?: string, customDespacho?: string) => {
+    const telefone = item.denunciante_telefone;
+    if (!telefone) {
+      toast.warning('Esta ocorrência é anônima ou não possui telefone de contato.');
+      return;
+    }
+
+    const st = customStatus || item.status;
+    const stLabelMap: Record<string, string> = {
+      recebida: 'Recebida (Aguardando Triagem)',
+      em_analise: 'Em Análise / Triagem Realizada',
+      em_investigacao: 'Em Investigação / Vistoria Agendada',
+      encaminhada: 'Encaminhada à Polícia Militar / Ambiental',
+      resolvida: 'Resolvida / Concluída com Sucesso',
+      arquivada: 'Arquivada / Improcedente'
+    };
+
+    const msg = buildDenunciaMessage({
+      denuncianteNome: item.denunciante_nome,
+      protocolo: item.protocolo,
+      statusLabel: stLabelMap[st] || st,
+      endereco: item.endereco,
+      despacho: customDespacho || item.observacoes_internas,
+      cidade: 'Arapongas - PR'
+    });
+
+    openWhatsApp1Click(telefone, msg);
+    toast.success('WhatsApp aberto com a notificação da ocorrência!');
+  };
+
+  const handleSalvarAtualizacao = async (notificarWhatsApp = false) => {
     if (!selectedDenuncia) return;
     setSalvandoStatus(true);
     try {
@@ -128,6 +159,10 @@ export default function GestaoDenuncias() {
       }
 
       toast.success('Denúncia atualizada com sucesso!');
+
+      if (notificarWhatsApp) {
+        dispararWhatsAppDenuncia(selectedDenuncia, novoStatus, anotacoesInternas);
+      }
 
       // Atualização imediata no estado local
       setDenuncias(prev => prev.map(d => 
@@ -164,13 +199,6 @@ export default function GestaoDenuncias() {
       console.error('Erro ao excluir:', error);
       toast.error('Erro ao excluir denúncia');
     }
-  };
-
-  const openWhatsApp = (telefone: string) => {
-    const clean = telefone.replace(/\D/g, '');
-    if (!clean) return;
-    const phoneWithCountry = clean.length <= 11 ? `55${clean}` : clean;
-    window.open(`https://wa.me/${phoneWithCountry}`, '_blank');
   };
 
   const openGoogleMaps = (d: DenunciaRow) => {
@@ -573,8 +601,9 @@ export default function GestaoDenuncias() {
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">Telefone:</span> {selectedDenuncia.denunciante_telefone}
                       <button
-                        onClick={() => openWhatsApp(selectedDenuncia.denunciante_telefone!)}
-                        className="text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2 py-0.5 rounded flex items-center gap-1"
+                        onClick={() => dispararWhatsAppDenuncia(selectedDenuncia, novoStatus, anotacoesInternas)}
+                        className="text-xs bg-green-100 hover:bg-green-200 text-green-800 font-semibold px-2 py-0.5 rounded flex items-center gap-1 transition-colors"
+                        title="Enviar Andamento no WhatsApp"
                       >
                         <MessageCircle size={12} /> WhatsApp
                       </button>
@@ -646,13 +675,35 @@ export default function GestaoDenuncias() {
                   <Printer size={14} /> Imprimir Relatório
                 </Button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button variant="outline" onClick={() => setModalDetalhesOpen(false)}>
                     Fechar
                   </Button>
-                  <Button onClick={handleSalvarAtualizacao} disabled={salvandoStatus} className="bg-emerald-600 hover:bg-emerald-700">
-                    {salvandoStatus ? 'Salvando...' : 'Salvar Alterações'}
+                  <Button 
+                    variant="outline"
+                    onClick={() => handleSalvarAtualizacao(false)} 
+                    disabled={salvandoStatus}
+                    className="text-xs"
+                  >
+                    {salvandoStatus ? 'Salvando...' : 'Apenas Salvar'}
                   </Button>
+                  {selectedDenuncia.denunciante_telefone ? (
+                    <Button 
+                      onClick={() => handleSalvarAtualizacao(true)} 
+                      disabled={salvandoStatus} 
+                      className="bg-green-600 hover:bg-green-700 text-white text-xs flex items-center gap-1.5"
+                    >
+                      <MessageCircle size={14} /> Salvar e Notificar Denunciante
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => handleSalvarAtualizacao(false)} 
+                      disabled={salvandoStatus} 
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                    >
+                      {salvandoStatus ? 'Salvando...' : 'Salvar Alterações'}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
