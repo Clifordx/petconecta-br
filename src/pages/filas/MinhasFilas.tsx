@@ -9,28 +9,40 @@ import {
   AlertCircle, 
   Calendar, 
   MapPin, 
-  Phone,
-  Scissors,
-  Loader2,
-  RefreshCw,
-  Dog,
-  Cat
+  Phone, 
+  Scissors, 
+  Loader2, 
+  RefreshCw, 
+  Dog, 
+  Cat,
+  CreditCard,
+  AlertTriangle,
+  ShieldCheck
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import FichaAutorizacaoModal from '@/components/filas/FichaAutorizacaoModal';
+import CarteirinhaDigital from '@/components/pets/CarteirinhaDigital';
 
 export default function MinhasFilas() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const initialTab = searchParams.get('tab') === 'consulta' ? 'consulta' : 'castracao';
   const [activeTab, setActiveTab] = useState<'castracao' | 'consulta'>(initialTab);
   const [loading, setLoading] = useState(true);
 
   const [castracoes, setCastracoes] = useState<any[]>([]);
   const [consultas, setConsultas] = useState<any[]>([]);
+
+  // Modais de Documentação
+  const [fichaModalOpen, setFichaModalOpen] = useState(false);
+  const [fichaData, setFichaData] = useState<any>(null);
+
+  const [carteirinhaModalOpen, setCarteirinhaModalOpen] = useState(false);
+  const [carteirinhaPet, setCarteirinhaPet] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -58,7 +70,7 @@ export default function MinhasFilas() {
           data_agendada,
           observacoes,
           criado_em,
-          pets (id, nome, especie, raca, fotos_pet(url)),
+          pets (id, nome, especie, raca, sexo, porte, cor, castrado, microchip, fotos_pet(url)),
           clinicas_parceiras (nome, endereco, telefone)
         `)
         .eq('tutor_id', user.id)
@@ -73,7 +85,12 @@ export default function MinhasFilas() {
           const index = todasFilas.findIndex(f => f.id === item.id);
           posicao = index !== -1 ? index + 1 : 1;
         }
-        return { ...item, posicao };
+        return { 
+          ...item, 
+          posicao,
+          pets: Array.isArray(item.pets) ? item.pets[0] : item.pets,
+          clinicas_parceiras: Array.isArray(item.clinicas_parceiras) ? item.clinicas_parceiras[0] : item.clinicas_parceiras
+        };
       });
 
       setCastracoes(castracoesComPosicao);
@@ -90,14 +107,21 @@ export default function MinhasFilas() {
           diagnostico,
           prescricao,
           criado_em,
-          pets (id, nome, especie, raca, fotos_pet(url)),
+          pets (id, nome, especie, raca, sexo, porte, cor, castrado, microchip, fotos_pet(url)),
           clinicas_parceiras (nome, endereco, telefone)
         `)
         .eq('tutor_id', user.id)
         .order('criado_em', { ascending: false });
 
       if (errConsulta) throw errConsulta;
-      setConsultas(minhasConsultas || []);
+
+      const consultasFormatadas = (minhasConsultas || []).map(item => ({
+        ...item,
+        pets: Array.isArray(item.pets) ? item.pets[0] : item.pets,
+        clinicas_parceiras: Array.isArray(item.clinicas_parceiras) ? item.clinicas_parceiras[0] : item.clinicas_parceiras
+      }));
+
+      setConsultas(consultasFormatadas);
 
     } catch (error) {
       console.error('Erro ao carregar filas do cidadão:', error);
@@ -105,6 +129,41 @@ export default function MinhasFilas() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const abrirFicha = (item: any, tipo: 'castracao' | 'consulta') => {
+    const petObj = item.pets;
+    if (!petObj) {
+      toast.error('Dados do animal não encontrados.');
+      return;
+    }
+
+    setFichaData({
+      tipo,
+      protocolo: `AUT-${tipo === 'castracao' ? 'CAST' : 'CONS'}-${item.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`,
+      dataAgendada: tipo === 'castracao' ? item.data_agendada : item.data_consulta,
+      clinicaNome: item.clinicas_parceiras?.nome || 'Clínica Conveniada Municipal',
+      clinicaEndereco: item.clinicas_parceiras?.endereco,
+      clinicaTelefone: item.clinicas_parceiras?.telefone,
+      motivo: item.motivo,
+      pet: petObj,
+      tutor: {
+        nome: profile?.nome || user?.email || 'Tutor',
+        cpf: profile?.cpf,
+        telefone: profile?.telefone
+      }
+    });
+    setFichaModalOpen(true);
+  };
+
+  const abrirCarteirinha = (pet: any) => {
+    if (!pet) return;
+    setCarteirinhaPet({
+      ...pet,
+      tutor_nome: profile?.nome || user?.email,
+      tutor_telefone: profile?.telefone
+    });
+    setCarteirinhaModalOpen(true);
   };
 
   const getCastracaoBadge = (status: string) => {
@@ -151,31 +210,52 @@ export default function MinhasFilas() {
 
         <div className="flex items-center gap-2">
           <Button 
-            onClick={carregarMinhasFilas} 
             variant="outline" 
             size="sm" 
-            className="text-xs flex items-center gap-1.5"
+            onClick={carregarMinhasFilas}
             disabled={loading}
+            className="text-xs flex items-center gap-1.5"
           >
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Atualizar
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+            Atualizar
           </Button>
           <Button 
-            onClick={() => navigate('/app/filas/castracao')} 
-            className="bg-emerald-600 hover:bg-emerald-700 text-xs flex items-center gap-1.5"
+            size="sm" 
+            onClick={() => navigate('/app/filas/castracao')}
+            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1"
           >
             <Plus size={14} /> Inscrever para Castração
           </Button>
           <Button 
-            onClick={() => navigate('/app/filas/consulta')} 
-            variant="outline" 
-            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-xs flex items-center gap-1.5"
+            size="sm" 
+            variant="outline"
+            onClick={() => navigate('/app/filas/consulta')}
+            className="text-xs text-blue-700 border-blue-200 hover:bg-blue-50 flex items-center gap-1"
           >
             <Stethoscope size={14} /> Solicitar Consulta
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
+      {/* AVISO GERAL DE DOCUMENTAÇÃO OBRIGATÓRIA */}
+      <div className="bg-amber-50/80 border border-amber-300/80 rounded-2xl p-4 text-xs text-amber-950 flex items-start gap-3 shadow-xs">
+        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <span className="font-extrabold text-amber-950 block text-sm">
+            Documentação Obrigatória para o Dia do Atendimento
+          </span>
+          <p className="text-amber-900 leading-relaxed">
+            Para garantir a segurança do seu pet e a correta identificação na clínica conveniada, é <strong>obrigatório apresentar</strong> no dia da cirurgia ou consulta:
+          </p>
+          <ul className="list-disc pl-4 space-y-0.5 text-amber-800 font-medium">
+            <li><strong>Carteirinha Digital do Pet:</strong> com o QR Code e RGA Oficial gerado pelo sistema.</li>
+            <li><strong>Guia Oficial de Autorização:</strong> baixada no seu celular ou impressa (com o termo e horário).</li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-6">
+        
         {/* Abas */}
         <div className="flex gap-4 border-b pb-2">
           <button 
@@ -231,55 +311,88 @@ export default function MinhasFilas() {
                   castracoes.map((item) => (
                     <div 
                       key={item.id} 
-                      className="border rounded-2xl p-5 hover:border-emerald-300 transition-colors bg-white shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                      className="border rounded-2xl p-5 hover:border-emerald-300 transition-colors bg-white shadow-xs space-y-4"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 overflow-hidden shrink-0 flex items-center justify-center">
-                          {item.pets?.fotos_pet && item.pets.fotos_pet.length > 0 ? (
-                            <img src={item.pets.fotos_pet[0].url} alt={item.pets.nome} className="w-full h-full object-cover" />
-                          ) : (
-                            item.pets?.especie === 'gato' ? <Cat size={24} className="text-emerald-700" /> : <Dog size={24} className="text-emerald-700" />
-                          )}
-                        </div>
-
-                        <div className="space-y-1">
-                          <h3 className="font-extrabold text-lg text-gray-900">{item.pets?.nome || 'Pet'}</h3>
-                          <p className="text-xs text-gray-500">
-                            {item.pets?.especie === 'gato' ? 'Gato' : 'Cachorro'} • {item.pets?.raca || 'SRD'}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            Inscrito em: {new Date(item.criado_em).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Informações de Agendamento ou Posição */}
-                      <div className="flex flex-wrap items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                        {item.status === 'pendente' && (
-                          <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-center">
-                            <span className="block text-2xl font-black text-amber-900">{item.posicao}º</span>
-                            <span className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Lugar na Fila</span>
-                          </div>
-                        )}
-
-                        {item.status === 'agendado' && (
-                          <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs space-y-1 text-blue-950">
-                            <div className="flex items-center gap-1 font-bold">
-                              <Calendar size={13} className="text-blue-700" />
-                              <span>Cirurgia: {new Date(item.data_agendada).toLocaleDateString('pt-BR')} às {new Date(item.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                            {item.clinicas_parceiras?.nome && (
-                              <div className="flex items-center gap-1 text-gray-600">
-                                <MapPin size={12} className="text-blue-600" /> {item.clinicas_parceiras.nome}
-                              </div>
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 overflow-hidden shrink-0 flex items-center justify-center">
+                            {item.pets?.fotos_pet && item.pets.fotos_pet.length > 0 ? (
+                              <img src={item.pets.fotos_pet[0].url} alt={item.pets.nome} className="w-full h-full object-cover" />
+                            ) : (
+                              item.pets?.especie === 'gato' ? <Cat size={24} className="text-emerald-700" /> : <Dog size={24} className="text-emerald-700" />
                             )}
                           </div>
-                        )}
 
-                        <div>
-                          {getCastracaoBadge(item.status)}
+                          <div className="space-y-1">
+                            <h3 className="font-extrabold text-lg text-gray-900">{item.pets?.nome || 'Pet'}</h3>
+                            <p className="text-xs text-gray-500">
+                              {item.pets?.especie === 'gato' ? 'Gato' : 'Cachorro'} • {item.pets?.raca || 'SRD'}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Inscrito em: {new Date(item.criado_em).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Posição ou Agendamento */}
+                        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                          {item.status === 'pendente' && (
+                            <div className="bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl text-center">
+                              <span className="block text-2xl font-black text-amber-900">{item.posicao}º</span>
+                              <span className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">Lugar na Fila</span>
+                            </div>
+                          )}
+
+                          {item.status === 'agendado' && (
+                            <div className="bg-blue-50 border border-blue-200 p-3 rounded-xl text-xs space-y-1 text-blue-950">
+                              <div className="flex items-center gap-1 font-bold">
+                                <Calendar size={13} className="text-blue-700" />
+                                <span>Cirurgia: {new Date(item.data_agendada).toLocaleDateString('pt-BR')} às {new Date(item.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                              {item.clinicas_parceiras?.nome && (
+                                <div className="flex items-center gap-1 text-gray-600">
+                                  <MapPin size={12} className="text-blue-600" /> {item.clinicas_parceiras.nome}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <div>
+                            {getCastracaoBadge(item.status)}
+                          </div>
                         </div>
                       </div>
+
+                      {/* BARRA DE DOCUMENTAÇÃO OBRIGATÓRIA (CARTEIRINHA + GUIA) */}
+                      <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                          <p className="font-bold text-gray-900 flex items-center gap-1.5">
+                            <ShieldCheck size={15} className="text-emerald-600" /> Documentos Oficiais para Atendimento:
+                          </p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            Apresente a Carteirinha com QR Code e a Ficha de Autorização assinada na clínica.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => abrirCarteirinha(item.pets)}
+                            className="text-xs flex-1 sm:flex-initial flex items-center justify-center gap-1.5 border-emerald-300 text-emerald-800 hover:bg-emerald-50 bg-white"
+                          >
+                            <CreditCard size={13} /> Carteirinha do Pet
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => abrirFicha(item, 'castracao')}
+                            className="text-xs flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <FileText size={13} /> Ficha de Autorização
+                          </Button>
+                        </div>
+                      </div>
+
                     </div>
                   ))
                 )}
@@ -294,7 +407,7 @@ export default function MinhasFilas() {
                     <Stethoscope className="w-12 h-12 mx-auto text-gray-300" />
                     <div>
                       <p className="font-semibold text-gray-800">Você não possui consultas solicitadas.</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Se o seu pet estiver doente ou necessitar de atendimento, agende uma consulta.</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Se o seu animal estiver com sintomas clínicos, solicite atendimento gratuito.</p>
                     </div>
                     <Button onClick={() => navigate('/app/filas/consulta')} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-xs">
                       Agendar Consulta Veterinária
@@ -353,6 +466,37 @@ export default function MinhasFilas() {
                           <p className="text-gray-700 whitespace-pre-wrap">{item.prescricao}</p>
                         </div>
                       )}
+
+                      {/* BARRA DE DOCUMENTAÇÃO OBRIGATÓRIA DA CONSULTA */}
+                      <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-3 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                          <p className="font-bold text-gray-900 flex items-center gap-1.5">
+                            <ShieldCheck size={15} className="text-emerald-600" /> Documentação Obrigatória:
+                          </p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            Leve a Carteirinha Digital e a Guia Oficial impressa ou no celular.
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => abrirCarteirinha(item.pets)}
+                            className="text-xs flex-1 sm:flex-initial flex items-center justify-center gap-1.5 border-emerald-300 text-emerald-800 hover:bg-emerald-50 bg-white"
+                          >
+                            <CreditCard size={13} /> Carteirinha do Pet
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => abrirFicha(item, 'consulta')}
+                            className="text-xs flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <FileText size={13} /> Baixar Guia de Consulta
+                          </Button>
+                        </div>
+                      </div>
+
                     </div>
                   ))
                 )}
@@ -361,6 +505,37 @@ export default function MinhasFilas() {
           </>
         )}
       </div>
+
+      {/* MODAL DA GUIA OFICIAL DE AUTORIZAÇÃO */}
+      {fichaModalOpen && fichaData && (
+        <FichaAutorizacaoModal
+          isOpen={fichaModalOpen}
+          onClose={() => setFichaModalOpen(false)}
+          tipo={fichaData.tipo}
+          protocolo={fichaData.protocolo}
+          dataAgendada={fichaData.dataAgendada}
+          clinicaNome={fichaData.clinicaNome}
+          clinicaEndereco={fichaData.clinicaEndereco}
+          clinicaTelefone={fichaData.clinicaTelefone}
+          motivo={fichaData.motivo}
+          pet={fichaData.pet}
+          tutor={fichaData.tutor}
+          onAbrirCarteirinha={() => {
+            setFichaModalOpen(false);
+            abrirCarteirinha(fichaData.pet);
+          }}
+        />
+      )}
+
+      {/* MODAL DA CARTEIRINHA DIGITAL */}
+      {carteirinhaModalOpen && carteirinhaPet && (
+        <CarteirinhaDigital
+          isOpen={carteirinhaModalOpen}
+          onClose={() => setCarteirinhaModalOpen(false)}
+          pet={carteirinhaPet}
+        />
+      )}
+
     </div>
   );
 }

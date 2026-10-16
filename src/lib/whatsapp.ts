@@ -48,7 +48,7 @@ export function formatPhoneNumber(telefone: string): string {
 }
 
 /**
- * 1. MENSAGEM OFICIAL DE CASTRAÇÃO AGENDADA (COM REGRAS DE JEJUM)
+ * 1. MENSAGEM OFICIAL DE CASTRAÇÃO AGENDADA (COM REGRAS DE JEJUM E DOCUMENTOS)
  */
 export function buildCastracaoMessage(params: CastracaoParams): string {
   const dt = new Date(params.dataAgendada);
@@ -70,11 +70,13 @@ A cirurgia de castração gratuita do seu animal foi *agendada com sucesso*!
 ⏰ *Horário de Chegada:* ${horaFormatada}
 📍 *Município:* ${cidade}
 
-⚠️ *INSTRUÇÕES OBRIGATÓRIAS PARA A CIRURGIA:*
-• O animal deve estar em *JEJUM TOTAL DE 8 HORAS* de água e comida (risco de broncoaspiração na anestesia).
-• Cães devem comparecer com coleira e guia.
-• Gatos devem ser transportados obrigatoriamente em caixa de transporte segura.
-• Leve um cobertor ou toalha limpa para aquecer o animal no pós-operatório.
+⚠️ *DOCUMENTOS E REQUISITOS OBRIGATÓRIOS (APRESENTAR NA CLÍNICA):*
+1. *Carteirinha Digital do Pet:* Com QR Code gerado pelo app PetConecta BR (no celular ou impressa).
+2. *Guia Oficial de Autorização:* Baixada na aba "Minhas Filas" do aplicativo.
+3. *Jejum Total de 8 Horas:* Água e comida rigorosamente suspensos nas 8h anteriores (risco anestésico grave).
+4. Cães devem comparecer com coleira e guia firme.
+5. Gatos devem ser transportados obrigatoriamente em caixa de transporte fechada.
+6. Leve um cobertor ou toalha limpa para aquecer o animal no pós-operatório.
 
 ⚠️ *ATENÇÃO:* Caso não possa comparecer, avise com no mínimo 24h de antecedência para ceder a vaga para outro animal na fila de espera.`;
 }
@@ -98,9 +100,11 @@ A consulta veterinária do(a) seu(sua) pet *${params.petNome}* foi confirmada:
 📅 *Data:* ${dataFormatada}
 ⏰ *Horário:* ${horaFormatada}
 ${params.motivo ? `📋 *Motivo Registrado:* ${params.motivo}\n` : ''}
-📌 *Recomendações:*
-• Chegue com 10 minutos de antecedência.
-• Apresente a Carteirinha Digital ou Caderneta de Vacinação do animal se houver.`;
+⚠️ *DOCUMENTOS OBRIGATÓRIOS (APRESENTAR NA RECEPÇÃO):*
+1. *Carteirinha Digital do Pet:* Com QR Code gerado pelo sistema PetConecta BR.
+2. *Guia Oficial de Consulta:* Disponível para download no app em "Minhas Filas".
+3. Documento com foto do tutor (RG ou CNH).
+• Chegue com 10 minutos de antecedência.`;
 }
 
 /**

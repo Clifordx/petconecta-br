@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Calendar as CalendarIcon, CheckCircle, XCircle, MessageCircle, RotateCcw, Edit } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, CheckCircle, XCircle, MessageCircle, RotateCcw, Edit, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { buildCastracaoMessage, openWhatsApp1Click } from '@/lib/whatsapp';
+import FichaAutorizacaoModal from '@/components/filas/FichaAutorizacaoModal';
 
 export default function GestaoFila() {
   const [fila, setFila] = useState<any[]>([]);
@@ -23,6 +24,10 @@ export default function GestaoFila() {
   const [observacoes, setObservacoes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Guia Oficial
+  const [fichaModalOpen, setFichaModalOpen] = useState(false);
+  const [fichaData, setFichaData] = useState<any>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -39,9 +44,9 @@ export default function GestaoFila() {
         .from('filas_castracao')
         .select(`
           *,
-          pets (id, nome, especie, raca, sexo, castrado),
+          pets (id, nome, especie, raca, sexo, castrado, microchip),
           perfis:tutor_id (nome, telefone),
-          clinicas_parceiras:clinica_id (id, nome)
+          clinicas_parceiras:clinica_id (id, nome, endereco, telefone)
         `)
         .order('criado_em', { ascending: true });
 
@@ -95,6 +100,24 @@ export default function GestaoFila() {
     setClinicaId(item.clinica_id || (clinicas[0]?.id || ''));
     setObservacoes(item.observacoes || '');
     setIsModalOpen(true);
+  };
+
+  const abrirGuia = (item: any) => {
+    setFichaData({
+      tipo: 'castracao',
+      protocolo: `AUT-CAST-${item.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`,
+      dataAgendada: item.data_agendada,
+      clinicaNome: item.clinicas_parceiras?.nome || 'Clínica Conveniada Municipal',
+      clinicaEndereco: item.clinicas_parceiras?.endereco,
+      clinicaTelefone: item.clinicas_parceiras?.telefone,
+      motivo: item.observacoes,
+      pet: item.pets,
+      tutor: {
+        nome: item.perfis?.nome || 'Tutor',
+        telefone: item.perfis?.telefone
+      }
+    });
+    setFichaModalOpen(true);
   };
 
   const dispararWhatsAppCastracao = (item: any, customClinicaId?: string, customData?: string) => {
@@ -307,6 +330,15 @@ export default function GestaoFila() {
                           </button>
                         )}
 
+                        {/* Botão para Visualizar e Imprimir a Guia Oficial */}
+                        <button 
+                          onClick={() => abrirGuia(item)}
+                          title="Visualizar e Imprimir Guia Oficial" 
+                          className="p-1.5 text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-300 flex items-center gap-1 text-xs font-medium px-2"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-gray-600" /> Guia
+                        </button>
+
                         {/* Botão de Gerenciar / Agendar */}
                         <button 
                           onClick={() => openAgendarModal(item)}
@@ -460,6 +492,23 @@ export default function GestaoFila() {
           </div>
         </form>
       </Modal>
+
+      {/* MODAL DA GUIA OFICIAL */}
+      {fichaModalOpen && fichaData && (
+        <FichaAutorizacaoModal
+          isOpen={fichaModalOpen}
+          onClose={() => setFichaModalOpen(false)}
+          tipo={fichaData.tipo}
+          protocolo={fichaData.protocolo}
+          dataAgendada={fichaData.dataAgendada}
+          clinicaNome={fichaData.clinicaNome}
+          clinicaEndereco={fichaData.clinicaEndereco}
+          clinicaTelefone={fichaData.clinicaTelefone}
+          motivo={fichaData.motivo}
+          pet={fichaData.pet}
+          tutor={fichaData.tutor}
+        />
+      )}
     </div>
   );
 }

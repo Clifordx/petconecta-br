@@ -21,6 +21,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
 import { buildConsultaMessage, openWhatsApp1Click } from '@/lib/whatsapp';
+import FichaAutorizacaoModal from '@/components/filas/FichaAutorizacaoModal';
 
 export default function GestaoConsultas() {
   const [consultas, setConsultas] = useState<any[]>([]);
@@ -40,6 +41,10 @@ export default function GestaoConsultas() {
   const [prescricao, setPrescricao] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Modal Guia de Autorização
+  const [fichaModalOpen, setFichaModalOpen] = useState(false);
+  const [fichaData, setFichaData] = useState<any>(null);
+
   useEffect(() => {
     fetchConsultas();
     fetchClinicas();
@@ -47,7 +52,7 @@ export default function GestaoConsultas() {
 
   const fetchClinicas = async () => {
     try {
-      const { data } = await supabase.from('clinicas_parceiras').select('id, nome, telefone');
+      const { data } = await supabase.from('clinicas_parceiras').select('id, nome, telefone, endereco');
       setClinicas(data || []);
     } catch (e) {
       console.error(e);
@@ -66,6 +71,10 @@ export default function GestaoConsultas() {
             nome,
             especie,
             raca,
+            sexo,
+            porte,
+            castrado,
+            microchip,
             fotos_pet (url, is_principal)
           ),
           perfis:tutor_id (
@@ -75,7 +84,8 @@ export default function GestaoConsultas() {
           clinicas_parceiras:clinica_id (
             id,
             nome,
-            telefone
+            telefone,
+            endereco
           )
         `)
         .order('criado_em', { ascending: false });
@@ -88,6 +98,24 @@ export default function GestaoConsultas() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const abrirGuia = (item: any) => {
+    setFichaData({
+      tipo: 'consulta',
+      protocolo: `AUT-CONS-${item.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`,
+      dataAgendada: item.data_consulta,
+      clinicaNome: item.clinicas_parceiras?.nome || clinicas.find(c => c.id === item.clinica_id)?.nome || 'Clínica Municipal Credenciada',
+      clinicaEndereco: item.clinicas_parceiras?.endereco || 'Arapongas - PR',
+      clinicaTelefone: item.clinicas_parceiras?.telefone || clinicas.find(c => c.id === item.clinica_id)?.telefone,
+      motivo: item.motivo,
+      pet: item.pets,
+      tutor: {
+        nome: item.perfis?.nome || 'Tutor',
+        telefone: item.perfis?.telefone
+      }
+    });
+    setFichaModalOpen(true);
   };
 
   const abrirModalAgendamento = (item: any) => {
@@ -342,14 +370,25 @@ export default function GestaoConsultas() {
                     </td>
 
                     <td className="p-4 text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => abrirModalAgendamento(item)}
-                        className="text-xs flex items-center gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                      >
-                        <Calendar size={13} /> Gerenciar
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => abrirGuia(item)}
+                          className="text-xs flex items-center gap-1 border-gray-300 text-gray-700 hover:bg-gray-100"
+                          title="Imprimir ou Baixar Guia Oficial de Consulta"
+                        >
+                          <FileText size={13} className="text-emerald-600" /> Guia
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => abrirModalAgendamento(item)}
+                          className="text-xs flex items-center gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                        >
+                          <Calendar size={13} /> Gerenciar
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -466,6 +505,23 @@ export default function GestaoConsultas() {
             </div>
           </form>
         </Modal>
+      )}
+
+      {/* Modal Guia Oficial / Ficha de Autorização */}
+      {fichaData && (
+        <FichaAutorizacaoModal
+          isOpen={fichaModalOpen}
+          onClose={() => setFichaModalOpen(false)}
+          tipo="consulta"
+          protocolo={fichaData.protocolo}
+          dataAgendada={fichaData.dataAgendada}
+          clinicaNome={fichaData.clinicaNome}
+          clinicaEndereco={fichaData.clinicaEndereco}
+          clinicaTelefone={fichaData.clinicaTelefone}
+          motivo={fichaData.motivo}
+          pet={fichaData.pet}
+          tutor={fichaData.tutor}
+        />
       )}
     </div>
   );
