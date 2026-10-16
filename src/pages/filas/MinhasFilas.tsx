@@ -16,15 +16,17 @@ import {
   Dog,
   Cat
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 export default function MinhasFilas() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'castracao' | 'consulta'>('castracao');
+  const initialTab = searchParams.get('tab') === 'consulta' ? 'consulta' : 'castracao';
+  const [activeTab, setActiveTab] = useState<'castracao' | 'consulta'>(initialTab);
   const [loading, setLoading] = useState(true);
 
   const [castracoes, setCastracoes] = useState<any[]>([]);
@@ -175,7 +177,10 @@ export default function MinhasFilas() {
         {/* Abas */}
         <div className="flex gap-4 border-b pb-2">
           <button 
-            onClick={() => setActiveTab('castracao')}
+            onClick={() => {
+              setActiveTab('castracao');
+              setSearchParams({ tab: 'castracao' });
+            }}
             className={`pb-2.5 px-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === 'castracao' 
                 ? 'border-emerald-600 text-emerald-800' 
@@ -185,7 +190,10 @@ export default function MinhasFilas() {
             <Scissors size={16} /> Fila de Castração ({castracoes.length})
           </button>
           <button 
-            onClick={() => setActiveTab('consulta')}
+            onClick={() => {
+              setActiveTab('consulta');
+              setSearchParams({ tab: 'consulta' });
+            }}
             className={`pb-2.5 px-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
               activeTab === 'consulta' 
                 ? 'border-emerald-600 text-emerald-800' 

@@ -67,8 +67,9 @@ export default function SolicitarConsulta() {
       if (error) throw error;
 
       toast.success('Consulta solicitada com sucesso!');
-      navigate('/app/filas');
+      navigate('/app/filas?tab=consulta');
     } catch (error: any) {
+      console.error('Erro ao agendar consulta:', error);
       toast.error(error.message || 'Erro ao agendar consulta.');
     }
   };
