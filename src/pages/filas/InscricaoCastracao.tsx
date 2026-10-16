@@ -64,11 +64,16 @@ export default function InscricaoCastracao() {
     if (!user) return;
     
     try {
+      const campanhaSelecionada = campanhas.find(c => c.id === data.campaignId);
+      const obs = campanhaSelecionada 
+        ? `Inscrição vinculada à campanha: ${campanhaSelecionada.titulo}`
+        : 'Inscrição na fila geral de castração municipal';
+
       const { error } = await supabase.from('filas_castracao').insert({
         tutor_id: user.id,
         pet_id: data.petId,
-        campanha_id: data.campaignId || null,
-        status: 'aguardando_analise'
+        status: 'pendente',
+        observacoes: obs
       });
 
       if (error) {
@@ -78,7 +83,7 @@ export default function InscricaoCastracao() {
         throw error;
       }
 
-      toast.success('Inscrição realizada com sucesso!');
+      toast.success('Inscrição realizada com sucesso! Seu pet está na fila de castração.');
       navigate('/app/filas');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao realizar inscrição.');
