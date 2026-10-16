@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat } from 'lucide-react';
+import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat, CreditCard, QrCode } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import CarteirinhaDigital from '@/components/pets/CarteirinhaDigital';
 
 type Pet = {
   id: string;
@@ -32,6 +33,8 @@ const PetDetalhes = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState({ observacoes: '', castrado: false, vacinado: false, cor: '', porte: '', sexo: '', status: '' });
   const [isUploading, setIsUploading] = useState(false);
+  const [modalCarteirinhaOpen, setModalCarteirinhaOpen] = useState(false);
+  const [tutor, setTutor] = useState<{ nome?: string; telefone?: string } | null>(null);
   const { user } = useAuth();
 
   
@@ -176,6 +179,16 @@ const PetDetalhes = () => {
         
         if (error) throw error;
         setPet(data);
+
+        // Busca dados do tutor para a carteirinha
+        if (data?.tutor_id) {
+          const { data: tutorData } = await supabase
+            .from('perfis')
+            .select('nome, telefone')
+            .eq('id', data.tutor_id)
+            .single();
+          if (tutorData) setTutor(tutorData);
+        }
       } catch (error: any) {
         toast.error('Erro ao carregar detalhes do pet');
         navigate('/app/meus-pets');
@@ -206,20 +219,28 @@ const PetDetalhes = () => {
           </button>
           <h1 className="text-2xl font-bold text-gray-900">Perfil do Pet</h1>
         </div>
-        {!isEditing ? (
-          <button onClick={() => setIsEditing(true)} className="flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-md transition-colors">
-            <Edit className="w-4 h-4 mr-1.5" /> Editar
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setModalCarteirinhaOpen(true)}
+            className="flex items-center text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-1.5 rounded-lg shadow-sm transition-colors"
+          >
+            <CreditCard className="w-4 h-4 mr-1.5" /> Carteirinha Digital
           </button>
-        ) : (
-          <div className="flex gap-2">
-            <button onClick={() => setIsEditing(false)} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 px-3 py-1.5 rounded-md transition-colors">
-              Cancelar
+          {!isEditing ? (
+            <button onClick={() => setIsEditing(true)} className="flex items-center text-sm font-medium text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-md transition-colors">
+              <Edit className="w-4 h-4 mr-1.5" /> Editar
             </button>
-            <button onClick={handleSave} disabled={isSaving} className="flex items-center text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50">
-              {isSaving ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={() => setIsEditing(false)} className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 px-3 py-1.5 rounded-md transition-colors">
+                Cancelar
+              </button>
+              <button onClick={handleSave} disabled={isSaving} className="flex items-center text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-md transition-colors disabled:opacity-50">
+                {isSaving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -345,7 +366,16 @@ const PetDetalhes = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Ações Rápidas</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <button 
+                type="button"
+                onClick={() => setModalCarteirinhaOpen(true)}
+                className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/50 hover:border-emerald-600 hover:bg-emerald-100/70 transition-all group text-center cursor-pointer shadow-xs"
+              >
+                <CreditCard className="w-8 h-8 text-emerald-600 group-hover:scale-110 mb-3 transition-transform" />
+                <span className="font-bold text-emerald-950 group-hover:text-emerald-700">Carteirinha Digital</span>
+                <span className="text-xs text-emerald-800/80 mt-1">QR Code & RGA Oficial</span>
+              </button>
               <Link 
                 to="/app/filas/castracao"
                 className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all group"
@@ -402,6 +432,19 @@ const PetDetalhes = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal da Carteirinha Digital */}
+      {modalCarteirinhaOpen && (
+        <CarteirinhaDigital
+          isOpen={modalCarteirinhaOpen}
+          onClose={() => setModalCarteirinhaOpen(false)}
+          pet={{
+            ...pet,
+            tutor_nome: tutor?.nome || user?.email,
+            tutor_telefone: tutor?.telefone
+          }}
+        />
+      )}
     </div>
   );
 };

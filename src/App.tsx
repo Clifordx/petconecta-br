@@ -15,6 +15,7 @@ import DetalheAnimal from './pages/public/DetalheAnimal';
 import FeirasPublicas from './pages/public/FeirasPublicas';
 import NovaDenuncia from './pages/denuncias/NovaDenuncia';
 import AcompanharDenuncia from './pages/denuncias/AcompanharDenuncia';
+import ValidarPet from './pages/public/ValidarPet';
 
 // Citizen / Tutor Pages
 import MeusPets from './pages/pets/MeusPets';
@@ -92,6 +93,7 @@ function AppRoutes() {
         <Route path="/feiras" element={<FeirasPublicas />} />
         <Route path="/denuncia" element={<NovaDenuncia />} />
         <Route path="/acompanhar-denuncia" element={<AcompanharDenuncia />} />
+        <Route path="/validar/pet/:id" element={<ValidarPet />} />
         
         {/* Rotas Cidadão/Tutor */}
         <Route path="/app/dashboard" element={<ProtectedRoute allowedRoles={['cidadao']}><MeusPets /></ProtectedRoute>} />

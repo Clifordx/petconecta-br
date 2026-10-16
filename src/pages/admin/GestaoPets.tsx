@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Filter, LayoutGrid, List, Heart, Edit, Trash2, Camera, X } from 'lucide-react';
+import { Search, Plus, Filter, LayoutGrid, List, Heart, Edit, Trash2, Camera, X, CreditCard } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
 import { Pet } from '@/types';
+import CarteirinhaDigital from '@/components/pets/CarteirinhaDigital';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -15,6 +16,8 @@ export default function GestaoPets() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<any>(null);
+  const [carteirinhaOpen, setCarteirinhaOpen] = useState(false);
+  const [selectedPetCarteirinha, setSelectedPetCarteirinha] = useState<any>(null);
   
   const [nome, setNome] = useState('');
   const [especie, setEspecie] = useState('cao');
@@ -374,6 +377,13 @@ export default function GestaoPets() {
                   Tutor: {pet.tutor_nome}
                 </p>
                 <div className="flex gap-2">
+                  <button 
+                    onClick={() => { setSelectedPetCarteirinha(pet); setCarteirinhaOpen(true); }}
+                    className="py-1.5 px-2.5 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg flex items-center gap-1 border border-emerald-200 transition-colors"
+                    title="Carteirinha Digital com QR Code"
+                  >
+                    <CreditCard className="w-3.5 h-3.5" /> Carteirinha
+                  </button>
                   <button onClick={() => openEditModal(pet)} className="flex-1 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 flex justify-center items-center gap-1">
                     <Edit className="w-3.5 h-3.5" /> Editar
                   </button>
@@ -413,6 +423,13 @@ export default function GestaoPets() {
                     {renderStatusBadge(pet.status)}
                   </td>
                   <td className="p-4 text-right">
+                    <button 
+                      onClick={() => { setSelectedPetCarteirinha(pet); setCarteirinhaOpen(true); }}
+                      className="text-emerald-700 hover:text-emerald-900 mr-3 inline-flex items-center gap-1 font-semibold text-xs bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-md border border-emerald-200 transition-colors"
+                      title="Carteirinha Digital com QR Code"
+                    >
+                      <CreditCard className="w-3.5 h-3.5" /> Carteirinha
+                    </button>
                     <button onClick={() => openEditModal(pet)} className="text-gray-400 hover:text-emerald-600 mr-2">
                       <Edit className="w-4 h-4 inline-block" />
                     </button>
@@ -539,6 +556,21 @@ export default function GestaoPets() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal da Carteirinha Digital */}
+      {carteirinhaOpen && selectedPetCarteirinha && (
+        <CarteirinhaDigital
+          isOpen={carteirinhaOpen}
+          onClose={() => {
+            setCarteirinhaOpen(false);
+            setSelectedPetCarteirinha(null);
+          }}
+          pet={{
+            ...selectedPetCarteirinha,
+            tutor_nome: selectedPetCarteirinha.tutor_nome
+          }}
+        />
       )}
     </div>
   );
