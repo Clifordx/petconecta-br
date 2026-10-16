@@ -1,101 +1,426 @@
-import React from 'react';
-import { Search, Calendar, Clock, User, Stethoscope, Activity, CheckCircle, XCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { 
+  Search, 
+  Calendar, 
+  Clock, 
+  User, 
+  Stethoscope, 
+  Activity, 
+  CheckCircle, 
+  XCircle, 
+  MessageCircle, 
+  Building2, 
+  FileText,
+  AlertTriangle,
+  Plus,
+  Trash2
+} from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { Input } from '@/components/ui/Input';
+import { toast } from 'sonner';
 
 export default function GestaoConsultas() {
+  const [consultas, setConsultas] = useState<any[]>([]);
+  const [clinicas, setClinicas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+
+  // Modal Agendamento / Atendimento
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedConsulta, setSelectedConsulta] = useState<any>(null);
+  const [dataConsulta, setDataConsulta] = useState('');
+  const [horarioConsulta, setHorarioConsulta] = useState('14:00');
+  const [clinicaId, setClinicaId] = useState('');
+  const [status, setStatus] = useState('agendada');
+  const [diagnostico, setDiagnostico] = useState('');
+  const [prescricao, setPrescricao] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchConsultas();
+    fetchClinicas();
+  }, []);
+
+  const fetchClinicas = async () => {
+    try {
+      const { data } = await supabase.from('clinicas_parceiras').select('id, nome, telefone');
+      setClinicas(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchConsultas = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('consultas')
+        .select(`
+          *,
+          pets (
+            id,
+            nome,
+            especie,
+            raca,
+            fotos_pet (url, is_principal)
+          ),
+          perfis:tutor_id (
+            nome,
+            telefone
+          ),
+          clinicas_parceiras:clinica_id (
+            id,
+            nome,
+            telefone
+          )
+        `)
+        .order('criado_em', { ascending: false });
+
+      if (error) throw error;
+      setConsultas(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar consultas:', error);
+      toast.error('Erro ao carregar consultas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const abrirModalAgendamento = (item: any) => {
+    setSelectedConsulta(item);
+    setStatus(item.status || 'agendada');
+    setClinicaId(item.clinica_id || (clinicas[0]?.id || ''));
+    setDiagnostico(item.diagnostico || '');
+    setPrescricao(item.prescricao || '');
+    
+    if (item.data_consulta) {
+      const dt = new Date(item.data_consulta);
+      setDataConsulta(dt.toISOString().split('T')[0]);
+      setHorarioConsulta(dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+    } else {
+      setDataConsulta(new Date().toISOString().split('T')[0]);
+      setHorarioConsulta('14:00');
+    }
+
+    setModalOpen(true);
+  };
+
+  const handleSalvar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedConsulta) return;
+
+    setSaving(true);
+    try {
+      let dataFinal = null;
+      if (dataConsulta) {
+        dataFinal = `${dataConsulta}T${horarioConsulta || '00:00'}:00.000Z`;
+      }
+
+      const { error } = await supabase
+        .from('consultas')
+        .update({
+          status,
+          clinica_id: clinicaId || null,
+          data_consulta: dataFinal,
+          diagnostico: diagnostico.trim() || null,
+          prescricao: prescricao.trim() || null
+        })
+        .eq('id', selectedConsulta.id);
+
+      if (error) throw error;
+
+      toast.success('Consulta atualizada com sucesso!');
+      setModalOpen(false);
+      fetchConsultas();
+    } catch (error: any) {
+      console.error('Erro ao atualizar consulta:', error);
+      toast.error(error.message || 'Erro ao salvar consulta');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openWhatsApp = (telefone: string, petNome: string) => {
+    const clean = telefone.replace(/\D/g, '');
+    if (!clean) return;
+    const phoneFinal = clean.length <= 11 ? `55${clean}` : clean;
+    const msg = encodeURIComponent(`Olá! Entramos em contato a respeito da consulta veterinária do seu pet *${petNome}* agendada pelo PetConecta BR.`);
+    window.open(`https://wa.me/${phoneFinal}?text=${msg}`, '_blank');
+  };
+
+  const getFotoPrincipal = (fotos: any[]) => {
+    if (!fotos || fotos.length === 0) return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=200';
+    const princ = fotos.find(f => f.is_principal);
+    return princ ? princ.url : fotos[0].url;
+  };
+
+  const filtered = consultas.filter(c => {
+    const matchesSearch = 
+      c.pets?.nome?.toLowerCase().includes(search.toLowerCase()) ||
+      c.perfis?.nome?.toLowerCase().includes(search.toLowerCase()) ||
+      c.motivo?.toLowerCase().includes(search.toLowerCase());
+
+    const matchesStatus = filtroStatus === 'todos' || c.status === filtroStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusBadge = (st: string) => {
+    switch (st) {
+      case 'solicitada':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Aguardando Triagem</span>;
+      case 'agendada':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Agendada</span>;
+      case 'realizada':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Atendida / Concluída</span>;
+      case 'cancelada':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Cancelada</span>;
+      default:
+        return <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{st}</span>;
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestão de Consultas</h1>
-          <p className="text-gray-500">Agendamentos e triagem clínica</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Stethoscope className="w-7 h-7 text-emerald-600" /> Gestão de Consultas Veterinárias
+          </h1>
+          <p className="text-sm text-gray-500">
+            Triagem clínica, agendamento com clínicas credenciadas e prontuário básico.
+          </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 shadow-sm transition-colors">
-          Novo Agendamento
-        </button>
       </div>
 
+      {/* Barra de Filtros */}
+      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="relative w-full sm:w-80">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por paciente, tutor ou sintoma..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border rounded-xl text-sm focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <select
+            value={filtroStatus}
+            onChange={(e) => setFiltroStatus(e.target.value)}
+            className="border rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="todos">Todos os Status</option>
+            <option value="solicitada">Aguardando Triagem</option>
+            <option value="agendada">Agendadas</option>
+            <option value="realizada">Realizadas</option>
+            <option value="cancelada">Canceladas</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Tabela de Consultas */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder="Buscar paciente ou tutor..." 
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
-            />
+        {loading ? (
+          <div className="p-12 text-center text-gray-500">Carregando consultas...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-12 text-center text-gray-500 space-y-2">
+            <Stethoscope className="w-12 h-12 text-gray-300 mx-auto" />
+            <h3 className="font-bold text-gray-800">Nenhuma consulta encontrada</h3>
+            <p className="text-xs text-gray-400">As solicitações dos tutores aparecerão aqui automaticamente.</p>
           </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            <input type="date" className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" />
-            <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
-              <option>Todos os Veterinários</option>
-              <option>Dra. Ana Silva</option>
-              <option>Dr. Carlos Souza</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
-              <tr>
-                <th className="p-4">Horário</th>
-                <th className="p-4">Paciente / Tutor</th>
-                <th className="p-4">Motivo / Urgência</th>
-                <th className="p-4">Veterinário</th>
-                <th className="p-4">Status</th>
-                <th className="p-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {[
-                { time: '09:00', pet: 'Thor', tutor: 'Maria R.', reason: 'Vômito e apatia', urg: 'Alta', status: 'Aguardando', doc: 'Dra. Ana Silva', color: 'orange' },
-                { time: '09:30', pet: 'Luna', tutor: 'João P.', reason: 'Revisão Castração', urg: 'Baixa', status: 'Em Atendimento', doc: 'Dra. Ana Silva', color: 'blue' },
-                { time: '10:00', pet: 'Mingau', tutor: 'Pedro H.', reason: 'Vacina Anual', urg: 'Rotina', status: 'Agendado', doc: 'Sem atribuição', color: 'gray' },
-              ].map((item, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="p-4 font-bold text-gray-700">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-emerald-600" /> {item.time}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <p className="font-semibold text-gray-900">{item.pet}</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1"><User className="w-3 h-3" /> {item.tutor}</p>
-                  </td>
-                  <td className="p-4">
-                    <p className="text-gray-900 truncate max-w-[150px]">{item.reason}</p>
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-${item.color}-100 text-${item.color}-800 mt-1`}>
-                      {item.urg}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    <select className="text-sm border border-gray-200 rounded p-1 bg-gray-50 w-full text-gray-700">
-                      <option selected={item.doc === 'Dra. Ana Silva'}>Dra. Ana Silva</option>
-                      <option selected={item.doc === 'Dr. Carlos Souza'}>Dr. Carlos Souza</option>
-                      <option selected={item.doc === 'Sem atribuição'}>Atribuir...</option>
-                    </select>
-                  </td>
-                  <td className="p-4">
-                    <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium border border-gray-200 bg-white">
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded" title="Iniciar Atendimento">
-                        <Activity className="w-4 h-4" />
-                      </button>
-                      <button className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Cancelar">
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50 text-gray-700 text-xs uppercase font-semibold border-b">
+                <tr>
+                  <th className="p-4">Paciente (Pet)</th>
+                  <th className="p-4">Tutor Responsável</th>
+                  <th className="p-4">Sintomas / Motivo</th>
+                  <th className="p-4">Data Agendada & Clínica</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-right">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y">
+                {filtered.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={getFotoPrincipal(item.pets?.fotos_pet)} 
+                          alt={item.pets?.nome} 
+                          className="w-10 h-10 rounded-lg object-cover border flex-shrink-0"
+                        />
+                        <div>
+                          <span className="font-bold text-gray-900 block">{item.pets?.nome}</span>
+                          <span className="text-xs text-gray-500">{item.pets?.especie} • {item.pets?.raca || 'SRD'}</span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="p-4">
+                      <span className="font-semibold text-gray-800 block text-xs">{item.perfis?.nome || 'Tutor'}</span>
+                      {item.perfis?.telefone && (
+                        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500">
+                          <span>{item.perfis?.telefone}</span>
+                          <button
+                            onClick={() => openWhatsApp(item.perfis?.telefone, item.pets?.nome)}
+                            className="text-green-600 hover:text-green-700 p-0.5 bg-green-50 rounded"
+                            title="Chamar no WhatsApp"
+                          >
+                            <MessageCircle size={13} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-xs max-w-xs">
+                      <p className="font-medium text-gray-800 truncate" title={item.motivo}>{item.motivo}</p>
+                      {item.urgencia === 'urgente' && (
+                        <span className="text-[10px] text-red-600 font-bold flex items-center gap-0.5 mt-0.5">
+                          <AlertTriangle size={11} /> Urgente
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-xs">
+                      {item.data_consulta ? (
+                        <div>
+                          <span className="font-bold text-gray-900 block">
+                            {new Date(item.data_consulta).toLocaleDateString('pt-BR')} às{' '}
+                            {new Date(item.data_consulta).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="text-gray-500 block">{item.clinicas_parceiras?.nome || 'Clínica Municipal'}</span>
+                        </div>
+                      ) : (
+                        <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">Aguardando agendamento</span>
+                      )}
+                    </td>
+
+                    <td className="p-4">
+                      {getStatusBadge(item.status)}
+                    </td>
+
+                    <td className="p-4 text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => abrirModalAgendamento(item)}
+                        className="text-xs flex items-center gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                      >
+                        <Calendar size={13} /> Gerenciar
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Modal de Agendamento e Prontuário */}
+      {selectedConsulta && (
+        <Modal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title={`Consulta de ${selectedConsulta.pets?.nome}`}
+        >
+          <form onSubmit={handleSalvar} className="space-y-4">
+            <div className="p-3 bg-gray-50 rounded-xl border text-xs space-y-1">
+              <p><span className="font-bold text-gray-700">Tutor:</span> {selectedConsulta.perfis?.nome || 'Não informado'} ({selectedConsulta.perfis?.telefone || 'Sem telefone'})</p>
+              <p><span className="font-bold text-gray-700">Motivo informado:</span> {selectedConsulta.motivo}</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Status da Consulta</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="w-full border rounded-xl p-2.5 text-sm bg-white font-medium"
+                >
+                  <option value="solicitada">Aguardando Triagem</option>
+                  <option value="agendada">Agendada</option>
+                  <option value="realizada">Realizada / Concluída</option>
+                  <option value="cancelada">Cancelada</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Clínica Credenciada</label>
+                <select
+                  value={clinicaId}
+                  onChange={(e) => setClinicaId(e.target.value)}
+                  className="w-full border rounded-xl p-2.5 text-sm bg-white"
+                >
+                  <option value="">Selecione a clínica...</option>
+                  {clinicas.map(c => (
+                    <option key={c.id} value={c.id}>{c.nome}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Data da Consulta</label>
+                <Input
+                  type="date"
+                  value={dataConsulta}
+                  onChange={(e) => setDataConsulta(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Horário</label>
+                <Input
+                  type="time"
+                  value={horarioConsulta}
+                  onChange={(e) => setHorarioConsulta(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Diagnóstico Clínico (Opcional)</label>
+              <textarea
+                rows={2}
+                value={diagnostico}
+                onChange={(e) => setDiagnostico(e.target.value)}
+                placeholder="Anotações do veterinário sobre a avaliação física, sintomas..."
+                className="w-full border rounded-xl p-2.5 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Prescrição / Tratamento (Opcional)</label>
+              <textarea
+                rows={2}
+                value={prescricao}
+                onChange={(e) => setPrescricao(e.target.value)}
+                placeholder="Medicamentos receitados, dosagem, orientações ao tutor..."
+                className="w-full border rounded-xl p-2.5 text-sm"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t">
+              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+                {saving ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }
