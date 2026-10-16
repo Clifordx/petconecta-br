@@ -37,8 +37,8 @@ export default function GestaoFila() {
         .select(`
           *,
           pets (nome, especie, raca, sexo),
-          perfis (nome, telefone, email),
-          clinicas_parceiras (nome)
+          perfis:tutor_id (nome, telefone),
+          clinicas_parceiras:clinica_id (id, nome)
         `)
         .order('criado_em', { ascending: true });
 
