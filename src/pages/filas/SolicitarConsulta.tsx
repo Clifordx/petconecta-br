@@ -61,7 +61,7 @@ export default function SolicitarConsulta() {
         pet_id: data.petId,
         motivo: data.reason,
         urgencia: data.urgency,
-        status: 'solicitada'
+        status: 'agendada'
       });
 
       if (error) throw error;

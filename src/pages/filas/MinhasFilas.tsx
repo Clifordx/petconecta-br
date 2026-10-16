@@ -122,12 +122,14 @@ export default function MinhasFilas() {
     }
   };
 
-  const getConsultaBadge = (status: string) => {
+  const getConsultaBadge = (status: string, data_consulta?: string | null) => {
+    if (status === 'solicitada' || (status === 'agendada' && !data_consulta)) {
+      return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">Aguardando Triagem</span>;
+    }
     switch (status) {
-      case 'solicitada':
-        return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">Aguardando Triagem</span>;
       case 'agendada':
         return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-200">Consulta Confirmada</span>;
+      case 'realizada':
       case 'concluida':
         return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">Atendimento Concluído</span>;
       case 'cancelada':
@@ -320,7 +322,7 @@ export default function MinhasFilas() {
                         </div>
 
                         <div>
-                          {getConsultaBadge(item.status)}
+                          {getConsultaBadge(item.status, item.data_consulta)}
                         </div>
                       </div>
 

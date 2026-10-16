@@ -186,16 +186,26 @@ export default function GestaoConsultas() {
       c.perfis?.nome?.toLowerCase().includes(search.toLowerCase()) ||
       c.motivo?.toLowerCase().includes(search.toLowerCase());
 
-    const matchesStatus = filtroStatus === 'todos' || c.status === filtroStatus;
+    let matchesStatus = true;
+    if (filtroStatus === 'triagem') {
+      matchesStatus = c.status === 'solicitada' || (c.status === 'agendada' && !c.data_consulta);
+    } else if (filtroStatus === 'agendada') {
+      matchesStatus = c.status === 'agendada' && !!c.data_consulta;
+    } else if (filtroStatus !== 'todos') {
+      matchesStatus = c.status === filtroStatus;
+    }
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusBadge = (st: string) => {
+  const getStatusBadge = (st: string, data_consulta?: string | null) => {
+    if (st === 'solicitada' || (st === 'agendada' && !data_consulta)) {
+      return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Aguardando Triagem</span>;
+    }
     switch (st) {
-      case 'solicitada':
-        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">Aguardando Triagem</span>;
       case 'agendada':
         return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Agendada</span>;
+      case 'em_andamento':
+        return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">Em Atendimento</span>;
       case 'realizada':
         return <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">Atendida / Concluída</span>;
       case 'cancelada':
@@ -239,8 +249,9 @@ export default function GestaoConsultas() {
             className="border rounded-xl px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-emerald-500"
           >
             <option value="todos">Todos os Status</option>
-            <option value="solicitada">Aguardando Triagem</option>
+            <option value="triagem">Aguardando Triagem</option>
             <option value="agendada">Agendadas</option>
+            <option value="em_andamento">Em Atendimento</option>
             <option value="realizada">Realizadas</option>
             <option value="cancelada">Canceladas</option>
           </select>
@@ -327,7 +338,7 @@ export default function GestaoConsultas() {
                     </td>
 
                     <td className="p-4">
-                      {getStatusBadge(item.status)}
+                      {getStatusBadge(item.status, item.data_consulta)}
                     </td>
 
                     <td className="p-4 text-right">
@@ -369,8 +380,8 @@ export default function GestaoConsultas() {
                   onChange={(e) => setStatus(e.target.value)}
                   className="w-full border rounded-xl p-2.5 text-sm bg-white font-medium"
                 >
-                  <option value="solicitada">Aguardando Triagem</option>
                   <option value="agendada">Agendada</option>
+                  <option value="em_andamento">Em Atendimento</option>
                   <option value="realizada">Realizada / Concluída</option>
                   <option value="cancelada">Cancelada</option>
                 </select>
