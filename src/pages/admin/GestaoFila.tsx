@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Filter, Download, Calendar as CalendarIcon, CheckCircle, XCircle, Clock, MessageCircle } from 'lucide-react';
+import { Search, Calendar as CalendarIcon, CheckCircle, XCircle, MessageCircle, RotateCcw, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -17,8 +17,10 @@ export default function GestaoFila() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   
   // Agendamento form
+  const [modalStatus, setModalStatus] = useState('agendado');
   const [dataAgendada, setDataAgendada] = useState('');
   const [clinicaId, setClinicaId] = useState('');
+  const [observacoes, setObservacoes] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -27,16 +29,17 @@ export default function GestaoFila() {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       // 1. Puxa as clínicas para o dropdown de agendamento
       const { data: clinicasData } = await supabase.from('clinicas_parceiras').select('*');
       setClinicas(clinicasData || []);
 
-      // 2. Puxa a fila com os joins
+      // 2. Puxa a fila com os relacionamentos corretos
       const { data: filaData, error } = await supabase
         .from('filas_castracao')
         .select(`
           *,
-          pets (nome, especie, raca, sexo),
+          pets (id, nome, especie, raca, sexo, castrado),
           perfis:tutor_id (nome, telefone),
           clinicas_parceiras:clinica_id (id, nome)
         `)
@@ -54,6 +57,8 @@ export default function GestaoFila() {
 
   const updateStatus = async (id: string, novoStatus: string) => {
     try {
+      const item = fila.find(f => f.id === id);
+      
       const { error } = await supabase
         .from('filas_castracao')
         .update({ status: novoStatus })
@@ -61,26 +66,34 @@ export default function GestaoFila() {
         
       if (error) throw error;
       
-      // Se concluiu, atualiza o status do pet para castrado=true
-      if (novoStatus === 'concluido') {
-        const item = fila.find(f => f.id === id);
-        if (item?.pet_id) {
-          await supabase.from('pets').update({ castrado: true }).eq('id', item.pet_id);
-        }
+      // Se concluiu, atualiza o status do pet para castrado = true
+      if (novoStatus === 'concluido' && item?.pet_id) {
+        await supabase.from('pets').update({ castrado: true }).eq('id', item.pet_id);
+      }
+
+      // Se reverteu de concluído para pendente ou agendado, reverte o pet para castrado = false!
+      if ((novoStatus === 'pendente' || novoStatus === 'agendado') && item?.pet_id) {
+        await supabase.from('pets').update({ castrado: false }).eq('id', item.pet_id);
       }
       
-      toast.success(`Status alterado para \${novoStatus}`);
+      toast.success(
+        novoStatus === 'pendente' 
+          ? 'Solicitação revertida para a fila de espera!' 
+          : `Status alterado para ${novoStatus}`
+      );
       fetchData();
     } catch (error) {
-      console.error('Erro ao atualizar:', error);
+      console.error('Erro ao atualizar status:', error);
       toast.error('Erro ao atualizar status');
     }
   };
 
   const openAgendarModal = (item: any) => {
     setSelectedItem(item);
+    setModalStatus(item.status || 'agendado');
     setDataAgendada(item.data_agendada ? new Date(item.data_agendada).toISOString().slice(0, 16) : '');
-    setClinicaId(item.clinica_id || '');
+    setClinicaId(item.clinica_id || (clinicas[0]?.id || ''));
+    setObservacoes(item.observacoes || '');
     setIsModalOpen(true);
   };
 
@@ -115,36 +128,55 @@ export default function GestaoFila() {
     toast.success('WhatsApp aberto com as instruções de jejum e agendamento!');
   };
 
-  const handleAgendar = async (e: React.FormEvent, notificarWhatsApp = false) => {
+  const handleSalvarModal = async (e: React.FormEvent, notificarWhatsApp = false) => {
     e.preventDefault();
-    if (!dataAgendada || !clinicaId) {
-      toast.error('Selecione uma clínica e uma data válida');
+    if (!selectedItem) return;
+
+    if (modalStatus === 'agendado' && (!dataAgendada || !clinicaId)) {
+      toast.error('Para agendar, selecione a clínica parceira e a data/hora');
       return;
     }
     
     setSaving(true);
     try {
+      const updatePayload: any = {
+        status: modalStatus,
+        observacoes: observacoes.trim() || null
+      };
+
+      if (modalStatus === 'agendado') {
+        updatePayload.data_agendada = new Date(dataAgendada).toISOString();
+        updatePayload.clinica_id = clinicaId;
+      } else if (modalStatus === 'pendente') {
+        updatePayload.data_agendada = null;
+        updatePayload.clinica_id = null;
+      }
+
       const { error } = await supabase
         .from('filas_castracao')
-        .update({
-          status: 'agendado',
-          data_agendada: new Date(dataAgendada).toISOString(),
-          clinica_id: clinicaId
-        })
+        .update(updatePayload)
         .eq('id', selectedItem.id);
         
       if (error) throw error;
-      toast.success('Castração agendada com sucesso!');
 
-      if (notificarWhatsApp) {
+      // Sincroniza flag do pet
+      if (modalStatus === 'concluido' && selectedItem.pet_id) {
+        await supabase.from('pets').update({ castrado: true }).eq('id', selectedItem.pet_id);
+      } else if ((modalStatus === 'pendente' || modalStatus === 'agendado') && selectedItem.pet_id) {
+        await supabase.from('pets').update({ castrado: false }).eq('id', selectedItem.pet_id);
+      }
+
+      toast.success('Fila de castração atualizada com sucesso!');
+
+      if (notificarWhatsApp && modalStatus === 'agendado') {
         dispararWhatsAppCastracao(selectedItem, clinicaId, dataAgendada);
       }
 
       setIsModalOpen(false);
       fetchData();
     } catch (error) {
-      console.error('Erro ao agendar:', error);
-      toast.error('Erro ao realizar agendamento');
+      console.error('Erro ao atualizar agendamento:', error);
+      toast.error('Erro ao salvar agendamento');
     } finally {
       setSaving(false);
     }
@@ -160,11 +192,11 @@ export default function GestaoFila() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pendente': return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">Pendente</span>;
-      case 'agendado': return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">Agendado</span>;
-      case 'concluido': return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">Concluído</span>;
-      case 'cancelado': return <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">Cancelado</span>;
-      default: return <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{status}</span>;
+      case 'pendente': return <span className="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-full text-xs font-bold border border-amber-200">Na Fila (Pendente)</span>;
+      case 'agendado': return <span className="px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold border border-blue-200">Cirurgia Agendada</span>;
+      case 'concluido': return <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold border border-emerald-200">Castrado / Concluído</span>;
+      case 'cancelado': return <span className="px-2.5 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold border border-red-200">Cancelado</span>;
+      default: return <span className="px-2.5 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">{status}</span>;
     }
   };
 
@@ -173,30 +205,30 @@ export default function GestaoFila() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestão de Fila de Castração</h1>
-          <p className="text-gray-500">Administre as solicitações de castração dos munícipes.</p>
+          <p className="text-sm text-gray-500">Administre as solicitações de castração dos munícipes, agendamentos e clínicas conveniadas.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full sm:w-64">
+          <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input 
               type="text" 
               placeholder="Buscar por tutor ou pet..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <select 
               value={statusFilter} 
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500"
+              className="px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-emerald-500 font-medium"
             >
               <option value="todos">Todos os Status</option>
-              <option value="pendente">Pendente</option>
+              <option value="pendente">Pendente (Na Fila)</option>
               <option value="agendado">Agendado</option>
               <option value="concluido">Concluído</option>
               <option value="cancelado">Cancelado</option>
@@ -205,18 +237,18 @@ export default function GestaoFila() {
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Carregando fila...</div>
+          <div className="p-12 text-center text-gray-500">Carregando fila...</div>
         ) : filteredFila.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">Nenhum registro encontrado na fila.</div>
+          <div className="p-12 text-center text-gray-500">Nenhum registro encontrado na fila.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600 font-medium border-b border-gray-200">
+              <thead className="bg-gray-50 text-gray-600 font-semibold border-b border-gray-200 text-xs uppercase tracking-wider">
                 <tr>
                   <th className="p-4">Posição</th>
                   <th className="p-4">Pet</th>
                   <th className="p-4">Tutor</th>
-                  <th className="p-4">Clínica / Data</th>
+                  <th className="p-4">Clínica / Data da Cirurgia</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Ações</th>
                 </tr>
@@ -224,74 +256,111 @@ export default function GestaoFila() {
               <tbody className="divide-y divide-gray-200">
                 {filteredFila.map((item, index) => (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="p-4 font-semibold text-gray-900">#{index + 1}</td>
+                    <td className="p-4 font-bold text-gray-900">#{index + 1}</td>
+                    
                     <td className="p-4">
-                      <p className="font-medium text-gray-900">{item.pets?.nome || 'Desconhecido'}</p>
-                      <p className="text-xs text-gray-500">
-                        {item.pets?.especie === 'cao' ? 'Cão' : 'Gato'} • {item.pets?.raca || 'SRD'}
+                      <p className="font-bold text-gray-900">{item.pets?.nome || 'Desconhecido'}</p>
+                      <p className="text-xs text-gray-500 capitalize">
+                        {item.pets?.especie === 'cao' ? 'Cachorro' : 'Gato'} • {item.pets?.raca || 'SRD'} • {item.pets?.sexo === 'macho' ? 'Macho' : 'Fêmea'}
                       </p>
                     </td>
+
                     <td className="p-4">
-                      <p className="text-gray-900">{item.perfis?.nome || 'Desconhecido'}</p>
+                      <p className="font-semibold text-gray-900">{item.perfis?.nome || 'Tutor'}</p>
                       <p className="text-xs text-gray-500">{item.perfis?.telefone || 'Sem telefone'}</p>
                     </td>
+
                     <td className="p-4">
-                      {item.status === 'agendado' || item.status === 'concluido' ? (
-                        <>
-                          <p className="font-medium text-gray-900">{item.clinicas_parceiras?.nome}</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(item.data_agendada).toLocaleDateString('pt-BR')} às {new Date(item.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </>
+                      {item.clinicas_parceiras?.nome || item.data_agendada ? (
+                        <div>
+                          <p className="font-semibold text-gray-900">{item.clinicas_parceiras?.nome || 'Clínica Conveniada'}</p>
+                          {item.data_agendada ? (
+                            <p className="text-xs text-gray-500">
+                              {new Date(item.data_agendada).toLocaleDateString('pt-BR')} às {new Date(item.data_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-amber-600">Data não informada</p>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-xs text-gray-400">Não agendado</span>
+                        <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
+                          Aguardando agendamento
+                        </span>
                       )}
                     </td>
+
                     <td className="p-4">
                       {getStatusBadge(item.status)}
                     </td>
+
                     <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2 items-center">
+                      <div className="flex justify-end gap-2 items-center flex-wrap">
+                        
+                        {/* Se estiver agendado, botão de WhatsApp com 1 clique */}
                         {item.status === 'agendado' && (
                           <button 
                             onClick={() => dispararWhatsAppCastracao(item)}
                             title="Enviar Comprovante e Jejum no WhatsApp" 
-                            className="p-1.5 text-green-700 bg-green-50 hover:bg-green-100 rounded-md border border-green-200 flex items-center gap-1 text-xs font-semibold px-2 transition-colors"
+                            className="p-1.5 text-green-700 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 flex items-center gap-1 text-xs font-semibold px-2 transition-colors"
                           >
-                            <MessageCircle className="w-3.5 h-3.5 text-green-600" /> Avisar Tutor
+                            <MessageCircle className="w-3.5 h-3.5 text-green-600" /> WhatsApp
                           </button>
                         )}
-                        {item.status === 'pendente' && (
+
+                        {/* Botão de Gerenciar / Agendar */}
+                        <button 
+                          onClick={() => openAgendarModal(item)}
+                          title="Gerenciar / Agendar" 
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-1 text-xs font-medium px-2"
+                        >
+                          <Edit className="w-3.5 h-3.5" /> Gerenciar
+                        </button>
+
+                        {/* Se estiver concluído ou cancelado: Botão explícito para Reverter */}
+                        {(item.status === 'concluido' || item.status === 'cancelado') && (
                           <button 
-                            onClick={() => openAgendarModal(item)}
-                            title="Agendar" 
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded border border-transparent hover:border-blue-200"
+                            onClick={() => {
+                              if (window.confirm(`Deseja reverter a situação de ${item.pets?.nome}? O animal voltará para a fila de espera e constará como NÃO castrado.`)) {
+                                updateStatus(item.id, 'pendente');
+                              }
+                            }}
+                            title="Reverter para a fila de espera" 
+                            className="p-1.5 text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-200 flex items-center gap-1 text-xs font-semibold px-2"
                           >
-                            <CalendarIcon className="w-4 h-4" />
+                            <RotateCcw className="w-3.5 h-3.5" /> Reverter para Fila
                           </button>
                         )}
+
+                        {/* Se estiver pendente ou agendado: Botão rápido para marcar como concluído */}
                         {(item.status === 'pendente' || item.status === 'agendado') && (
                           <button 
-                            onClick={() => updateStatus(item.id, 'concluido')}
-                            title="Marcar como Concluído" 
-                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded border border-transparent hover:border-emerald-200"
+                            onClick={() => {
+                              if (window.confirm(`Confirmar que a castração de ${item.pets?.nome} foi realizada com sucesso? O pet será marcado como castrado no sistema.`)) {
+                                updateStatus(item.id, 'concluido');
+                              }
+                            }}
+                            title="Marcar como Cirurgia Realizada" 
+                            className="p-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 flex items-center gap-1 text-xs font-semibold px-2"
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle className="w-3.5 h-3.5" /> Concluir
                           </button>
                         )}
+
+                        {/* Botão Cancelar se estiver pendente ou agendado */}
                         {item.status !== 'cancelado' && item.status !== 'concluido' && (
                           <button 
                             onClick={() => {
-                              if (window.confirm('Deseja realmente cancelar esta solicitação?')) {
+                              if (window.confirm(`Deseja realmente cancelar a solicitação de ${item.pets?.nome}?`)) {
                                 updateStatus(item.id, 'cancelado');
                               }
                             }}
                             title="Cancelar Solicitação" 
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200"
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200"
                           >
                             <XCircle className="w-4 h-4" />
                           </button>
                         )}
+
                       </div>
                     </td>
                   </tr>
@@ -302,24 +371,41 @@ export default function GestaoFila() {
         )}
       </div>
 
+      {/* Modal de Agendamento e Alteração de Status */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Agendar Castração"
+        title={`Gerenciar Castração: ${selectedItem?.pets?.nome || ''}`}
       >
-        <form onSubmit={handleAgendar} className="space-y-4">
-          <div className="bg-gray-50 p-3 rounded-lg mb-4 text-sm">
-            <p><strong>Pet:</strong> {selectedItem?.pets?.nome}</p>
-            <p><strong>Tutor:</strong> {selectedItem?.perfis?.nome}</p>
+        <form onSubmit={handleSalvarModal} className="space-y-4">
+          <div className="bg-gray-50 p-3 rounded-xl border text-xs space-y-1">
+            <p><strong>Paciente:</strong> {selectedItem?.pets?.nome} ({selectedItem?.pets?.especie})</p>
+            <p><strong>Tutor:</strong> {selectedItem?.perfis?.nome} ({selectedItem?.perfis?.telefone || 'Sem telefone'})</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Clínica Parceira *</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Status da Castração</label>
             <select
-              required
+              value={modalStatus}
+              onChange={(e) => setModalStatus(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 p-2.5 text-sm bg-white font-medium focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="pendente">Pendente (Na Fila de Espera)</option>
+              <option value="agendado">Agendado (Definir clínica e data)</option>
+              <option value="concluido">Concluído (Castração Realizada)</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              Clínica Conveniada {modalStatus === 'agendado' ? '*' : '(Opcional)'}
+            </label>
+            <select
+              required={modalStatus === 'agendado'}
               value={clinicaId}
               onChange={(e) => setClinicaId(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-gray-300 p-2.5 text-sm bg-white focus:ring-2 focus:ring-emerald-500"
             >
               <option value="">Selecione uma clínica...</option>
               {clinicas.map(c => (
@@ -329,13 +415,26 @@ export default function GestaoFila() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Data e Hora do Agendamento *</label>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              Data e Horário da Cirurgia {modalStatus === 'agendado' ? '*' : '(Opcional)'}
+            </label>
             <input
               type="datetime-local"
-              required
+              required={modalStatus === 'agendado'}
               value={dataAgendada}
               onChange={(e) => setDataAgendada(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-gray-300 p-2.5 text-sm focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">Observações Internas (Opcional)</label>
+            <textarea
+              rows={2}
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder="Instruções adicionais, restrições ou observações clínicas..."
+              className="w-full rounded-xl border border-gray-300 p-2.5 text-sm resize-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
@@ -343,18 +442,20 @@ export default function GestaoFila() {
             <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={saving} variant="outline" className="text-xs">
-                {saving ? 'Agendando...' : 'Apenas Salvar'}
+                {saving ? 'Salvando...' : 'Apenas Salvar'}
               </Button>
-              <Button 
-                type="button" 
-                disabled={saving}
-                onClick={async (e) => {
-                  await handleAgendar(e, true);
-                }}
-                className="bg-green-600 hover:bg-green-700 text-white text-xs flex items-center gap-1.5"
-              >
-                <MessageCircle size={14} /> Salvar e Enviar WhatsApp
-              </Button>
+              {modalStatus === 'agendado' && (
+                <Button 
+                  type="button" 
+                  disabled={saving}
+                  onClick={async (e) => {
+                    await handleSalvarModal(e, true);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs flex items-center gap-1.5"
+                >
+                  <MessageCircle size={14} /> Salvar e Enviar WhatsApp
+                </Button>
+              )}
             </div>
           </div>
         </form>
