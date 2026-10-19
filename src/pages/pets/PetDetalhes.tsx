@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat, CreditCard, QrCode } from 'lucide-react';
+import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat, CreditCard, QrCode, Syringe } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import CarteirinhaDigital from '@/components/pets/CarteirinhaDigital';
+import CarteiraVacinacaoModal from '@/components/pets/CarteiraVacinacaoModal';
 
 type Pet = {
   id: string;
@@ -34,6 +35,7 @@ const PetDetalhes = () => {
   const [editForm, setEditForm] = useState({ observacoes: '', castrado: false, vacinado: false, cor: '', porte: '', sexo: '', status: '' });
   const [isUploading, setIsUploading] = useState(false);
   const [modalCarteirinhaOpen, setModalCarteirinhaOpen] = useState(false);
+  const [modalVacinasOpen, setModalVacinasOpen] = useState(false);
   const [tutor, setTutor] = useState<{ nome?: string; telefone?: string } | null>(null);
   const [castracaoPet, setCastracaoPet] = useState<{ id: string; status: string } | null>(null);
   const [consultaPet, setConsultaPet] = useState<{ id: string; status: string; data_consulta?: string } | null>(null);
@@ -376,63 +378,104 @@ const PetDetalhes = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Ações Rápidas</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button 
                 type="button"
                 onClick={() => setModalCarteirinhaOpen(true)}
-                className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/50 hover:border-emerald-600 hover:bg-emerald-100/70 transition-all group text-center cursor-pointer shadow-xs"
+                className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/50 hover:border-emerald-600 hover:bg-emerald-100/70 transition-all group text-center cursor-pointer shadow-xs"
               >
-                <CreditCard className="w-8 h-8 text-emerald-600 group-hover:scale-110 mb-3 transition-transform" />
-                <span className="font-bold text-emerald-950 group-hover:text-emerald-700">Carteirinha Digital</span>
-                <span className="text-xs text-emerald-800/80 mt-1">QR Code & RGA Oficial</span>
+                <CreditCard className="w-7 h-7 text-emerald-600 group-hover:scale-110 mb-2 transition-transform" />
+                <span className="font-bold text-emerald-950 group-hover:text-emerald-700 text-xs">Carteirinha Digital</span>
+                <span className="text-[10px] text-emerald-800/80 mt-0.5">RGA & QR Code</span>
               </button>
+
+              <button 
+                type="button"
+                onClick={() => setModalVacinasOpen(true)}
+                className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/50 hover:border-emerald-600 hover:bg-emerald-100/70 transition-all group text-center cursor-pointer shadow-xs"
+              >
+                <Syringe className="w-7 h-7 text-emerald-600 group-hover:scale-110 mb-2 transition-transform" />
+                <span className="font-bold text-emerald-950 group-hover:text-emerald-700 text-xs">Carteira de Vacinas</span>
+                <span className="text-[10px] text-emerald-800/80 mt-0.5">Doses & Vermífugos</span>
+              </button>
+
               {pet.castrado ? (
-                <div className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 bg-gray-50 text-center opacity-85">
-                  <Scissors className="w-8 h-8 text-emerald-600 mb-3" />
-                  <span className="font-bold text-emerald-800 text-sm">Já Castrado</span>
-                  <span className="text-xs text-gray-500 mt-1">Procedimento realizado</span>
+                <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 bg-gray-50 text-center opacity-85">
+                  <Scissors className="w-7 h-7 text-emerald-600 mb-2" />
+                  <span className="font-bold text-emerald-800 text-xs">Já Castrado</span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">Realizado</span>
                 </div>
               ) : castracaoPet ? (
                 <Link 
                   to="/app/filas?tab=castracao"
-                  className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-amber-300 bg-amber-50/70 hover:bg-amber-100/80 transition-all group text-center"
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-amber-300 bg-amber-50/70 hover:bg-amber-100/80 transition-all group text-center"
                 >
-                  <Scissors className="w-8 h-8 text-amber-600 group-hover:scale-110 mb-3 transition-transform" />
-                  <span className="font-bold text-amber-950 group-hover:text-amber-800 text-sm">Inscrito na Fila</span>
-                  <span className="text-xs text-amber-700 font-medium mt-1">Ver posição na fila</span>
+                  <Scissors className="w-7 h-7 text-amber-600 group-hover:scale-110 mb-2 transition-transform" />
+                  <span className="font-bold text-amber-950 group-hover:text-amber-800 text-xs">Na Fila</span>
+                  <span className="text-[10px] text-amber-700 font-medium mt-0.5">Castração</span>
                 </Link>
               ) : (
                 <Link 
                   to="/app/filas/castracao"
-                  className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all group text-center"
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all group text-center"
                 >
-                  <Scissors className="w-8 h-8 text-gray-400 group-hover:text-emerald-600 mb-3 transition-colors" />
-                  <span className="font-medium text-gray-900 group-hover:text-emerald-700 text-sm">Fila de Castração</span>
-                  <span className="text-xs text-gray-500 mt-1">Inscrever animal</span>
+                  <Scissors className="w-7 h-7 text-gray-400 group-hover:text-emerald-600 mb-2 transition-colors" />
+                  <span className="font-medium text-gray-900 group-hover:text-emerald-700 text-xs">Fila de Castração</span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">Inscrever pet</span>
                 </Link>
               )}
 
               {consultaPet ? (
                 <Link 
                   to="/app/filas?tab=consulta"
-                  className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-blue-300 bg-blue-50/70 hover:bg-blue-100/80 transition-all group text-center"
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-blue-300 bg-blue-50/70 hover:bg-blue-100/80 transition-all group text-center"
                 >
-                  <Stethoscope className="w-8 h-8 text-blue-600 group-hover:scale-110 mb-3 transition-transform" />
-                  <span className="font-bold text-blue-950 group-hover:text-blue-800 text-sm">
-                    {consultaPet.data_consulta ? 'Consulta Agendada' : 'Aguardando Triagem'}
+                  <Stethoscope className="w-7 h-7 text-blue-600 group-hover:scale-110 mb-2 transition-transform" />
+                  <span className="font-bold text-blue-950 group-hover:text-blue-800 text-xs">
+                    {consultaPet.data_consulta ? 'Agendada' : 'Na Fila'}
                   </span>
-                  <span className="text-xs text-blue-700 font-medium mt-1">Acompanhar atendimento</span>
+                  <span className="text-[10px] text-blue-700 font-medium mt-0.5">Consulta</span>
                 </Link>
               ) : (
                 <Link 
                   to="/app/filas/consulta"
-                  className="flex flex-col items-center justify-center p-6 rounded-xl border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group text-center"
+                  className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all group text-center"
                 >
-                  <Stethoscope className="w-8 h-8 text-gray-400 group-hover:text-blue-600 mb-3 transition-colors" />
-                  <span className="font-medium text-gray-900 group-hover:text-blue-700 text-sm">Agendar Consulta</span>
-                  <span className="text-xs text-gray-500 mt-1">Atendimento clínico</span>
+                  <Stethoscope className="w-7 h-7 text-gray-400 group-hover:text-blue-600 mb-2 transition-colors" />
+                  <span className="font-medium text-gray-900 group-hover:text-blue-700 text-xs">Agendar Consulta</span>
+                  <span className="text-[10px] text-gray-500 mt-0.5">Atendimento</span>
                 </Link>
               )}
+            </div>
+          </div>
+
+          {/* Caderneta de Vacinação e Saúde Banner */}
+          <div className="bg-white rounded-xl shadow-sm border border-emerald-200 p-5 sm:p-6 bg-gradient-to-r from-emerald-50/40 to-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 shrink-0 shadow-2xs">
+                  <Syringe className="w-6 h-6 text-emerald-700" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                    Caderneta Sanitária e Vacinação
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold uppercase">
+                      {pet.vacinado ? 'Em Dia' : 'Atualizar'}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Histórico oficial de vacinas (Raiva, V10/V8), reforços anuais, vermífugos e controle antiparasitário.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setModalVacinasOpen(true)}
+                className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-colors shrink-0"
+              >
+                <Syringe size={14} /> Abrir Carteira de Vacinas
+              </button>
             </div>
           </div>
 
@@ -483,6 +526,33 @@ const PetDetalhes = () => {
             ...pet,
             tutor_nome: tutor?.nome || user?.email,
             tutor_telefone: tutor?.telefone
+          }}
+        />
+      )}
+
+      {/* Modal da Carteira de Vacinação */}
+      {modalVacinasOpen && (
+        <CarteiraVacinacaoModal
+          isOpen={modalVacinasOpen}
+          onClose={() => setModalVacinasOpen(false)}
+          pet={{
+            ...pet,
+            rga: `PR-ARA-2026-${pet.id.replace(/-/g, '').slice(0, 5).toUpperCase()}`,
+            tutor_id: user?.id
+          }}
+          tutor={{
+            nome: tutor?.nome || user?.email || 'Tutor',
+            telefone: tutor?.telefone
+          }}
+          onAtualizacao={() => {
+            supabase
+              .from('pets')
+              .select('*')
+              .eq('id', pet.id)
+              .single()
+              .then(({ data }) => {
+                if (data) setPet(data);
+              });
           }}
         />
       )}

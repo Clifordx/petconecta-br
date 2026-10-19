@@ -16,10 +16,12 @@ import {
   ExternalLink,
   CreditCard,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Syringe
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import CarteirinhaDigital from '@/components/pets/CarteirinhaDigital';
+import CarteiraVacinacaoModal from '@/components/pets/CarteiraVacinacaoModal';
 import { toast } from 'sonner';
 
 export default function ValidarPet() {
@@ -28,6 +30,7 @@ export default function ValidarPet() {
   const [tutor, setTutor] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [modalCarteirinhaOpen, setModalCarteirinhaOpen] = useState(false);
+  const [modalVacinasOpen, setModalVacinasOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -211,6 +214,14 @@ export default function ValidarPet() {
                 <CreditCard size={14} /> Abrir Carteirinha Digital
               </Button>
 
+              <Button
+                variant="outline"
+                onClick={() => setModalVacinasOpen(true)}
+                className="border-emerald-300 text-emerald-800 hover:bg-emerald-50 text-xs font-bold flex items-center gap-1.5 shadow-sm"
+              >
+                <Syringe size={14} className="text-emerald-600" /> Carteira de Vacinas
+              </Button>
+
               {tutor?.telefone && (
                 <button
                   onClick={() => openWhatsAppTutor(tutor.telefone, pet.nome)}
@@ -268,18 +279,33 @@ export default function ValidarPet() {
                 </span>
               </div>
 
-              <div className={`p-3 rounded-xl border flex flex-col justify-between ${
-                pet.vacinado ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
-              }`}>
+              <div 
+                onClick={() => setModalVacinasOpen(true)}
+                className={`p-3 rounded-xl border flex flex-col justify-between cursor-pointer transition-transform hover:scale-[1.02] ${
+                  pet.vacinado ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100/70' : 'bg-amber-50 border-amber-200 hover:bg-amber-100/70'
+                }`}
+                title="Clique para ver a Caderneta Sanitária"
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase">Vacinação</span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                    <Syringe size={12} className="text-emerald-700" /> Vacinação
+                  </span>
                   {pet.vacinado ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertTriangle size={16} className="text-amber-600" />}
                 </div>
                 <span className={`text-sm font-bold mt-2 ${pet.vacinado ? 'text-emerald-900' : 'text-amber-800'}`}>
-                  {pet.vacinado ? 'Vacinado (V10/Raiva)' : 'Vacina Pendente'}
+                  {pet.vacinado ? 'Vacinado (Ver Doses)' : 'Vacina Pendente'}
                 </span>
               </div>
             </div>
+
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setModalVacinasOpen(true)}
+              className="w-full text-xs flex items-center justify-center gap-1.5 border-emerald-300 text-emerald-800 hover:bg-emerald-50 font-semibold"
+            >
+              <Syringe size={13} className="text-emerald-600" /> Consultar Caderneta de Vacinação
+            </Button>
 
             {pet.observacoes && (
               <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-xs">
@@ -314,6 +340,22 @@ export default function ValidarPet() {
             ...pet,
             tutor_nome: tutor?.nome,
             tutor_telefone: tutor?.telefone
+          }}
+        />
+      )}
+
+      {/* MODAL DA CARTEIRA DE VACINAÇÃO */}
+      {modalVacinasOpen && (
+        <CarteiraVacinacaoModal
+          isOpen={modalVacinasOpen}
+          onClose={() => setModalVacinasOpen(false)}
+          pet={{
+            ...pet,
+            rga: `PR-ARA-2026-${pet.id.replace(/-/g, '').slice(0, 5).toUpperCase()}`
+          }}
+          tutor={{
+            nome: tutor?.nome || 'Tutor',
+            telefone: tutor?.telefone
           }}
         />
       )}

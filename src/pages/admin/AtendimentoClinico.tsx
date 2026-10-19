@@ -27,7 +27,8 @@ import {
   ChevronRight,
   Filter,
   Check,
-  RefreshCw
+  RefreshCw,
+  Syringe
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
@@ -36,6 +37,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import ReceitaAltaModal, { ReceitaAltaProps } from '@/components/clinica/ReceitaAltaModal';
+import CarteiraVacinacaoModal from '@/components/pets/CarteiraVacinacaoModal';
 import { openWhatsApp1Click } from '@/lib/whatsapp';
 
 export default function AtendimentoClinico() {
@@ -94,6 +96,35 @@ export default function AtendimentoClinico() {
   // Modal de Termo de Alta / Receita Impressa
   const [receitaModalOpen, setReceitaModalOpen] = useState(false);
   const [receitaData, setReceitaData] = useState<ReceitaAltaProps | null>(null);
+
+  // Modal de Carteira de Vacinação
+  const [vacinasModalOpen, setVacinasModalOpen] = useState(false);
+  const [petParaVacinas, setPetParaVacinas] = useState<any>(null);
+
+  const abrirCarteiraVacinas = (item: any) => {
+    setPetParaVacinas({
+      pet: {
+        id: item.pets?.id || item.pet_id,
+        nome: item.pets?.nome || 'Pet',
+        especie: item.pets?.especie || 'cão',
+        raca: item.pets?.raca,
+        porte: item.pets?.porte,
+        sexo: item.pets?.sexo,
+        rga: item.pets?.rga || `PR-ARA-2026-${(item.pets?.id || item.pet_id).replace(/-/g, '').slice(0, 5).toUpperCase()}`,
+        microchip: item.pets?.microchip,
+        vacinado: item.pets?.vacinado,
+        castrado: item.pets?.castrado,
+        tutor_id: item.tutor_id
+      },
+      tutor: {
+        nome: item.perfis?.nome || 'Tutor',
+        telefone: item.perfis?.telefone,
+        cpf: item.perfis?.cpf,
+        endereco: item.perfis?.endereco
+      }
+    });
+    setVacinasModalOpen(true);
+  };
 
   useEffect(() => {
     fetchClinicas();
@@ -692,8 +723,18 @@ export default function AtendimentoClinico() {
                       )}
                     </div>
 
-                    {/* Botão de Check-in */}
+                    {/* Botões de Ação */}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => abrirCarteiraVacinas(item)}
+                        className="text-xs flex items-center gap-1 border-slate-300 text-slate-700 hover:bg-slate-100 py-2 px-3 rounded-xl shrink-0"
+                        title="Ver ou registrar vacinas na Caderneta Oficial"
+                      >
+                        <Syringe size={14} className="text-emerald-600" />
+                        <span className="hidden sm:inline">Vacinas</span>
+                      </Button>
                       <Button
                         size="sm"
                         onClick={() => abrirCheckin(item)}
@@ -760,6 +801,15 @@ export default function AtendimentoClinico() {
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-2 border-t">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => abrirCarteiraVacinas(item)}
+                      className="text-xs flex items-center gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100"
+                    >
+                      <Syringe size={14} className="text-emerald-600" />
+                      <span>Caderneta de Vacinas</span>
+                    </Button>
                     <Button
                       size="sm"
                       onClick={() => abrirConclusao(item)}
@@ -1188,6 +1238,17 @@ export default function AtendimentoClinico() {
           pet={receitaData.pet}
           tutor={receitaData.tutor}
           atendimento={receitaData.atendimento}
+        />
+      )}
+
+      {/* MODAL 5: CARTEIRA DE VACINAÇÃO DO PACIENTE */}
+      {petParaVacinas && (
+        <CarteiraVacinacaoModal
+          isOpen={vacinasModalOpen}
+          onClose={() => setVacinasModalOpen(false)}
+          pet={petParaVacinas.pet}
+          tutor={petParaVacinas.tutor}
+          onAtualizacao={fetchAtendimentos}
         />
       )}
     </div>

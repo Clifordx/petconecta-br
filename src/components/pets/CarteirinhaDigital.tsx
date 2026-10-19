@@ -14,13 +14,15 @@ import {
   Phone,
   User,
   Heart,
-  Sparkles
+  Sparkles,
+  Syringe
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import CarteiraVacinacaoModal from './CarteiraVacinacaoModal';
 
 interface CarteirinhaProps {
   isOpen: boolean;
@@ -49,6 +51,7 @@ export default function CarteirinhaDigital({ isOpen, onClose, pet }: Carteirinha
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [abaAtiva, setAbaAtiva] = useState<'lado_a_lado' | 'frente' | 'verso'>('lado_a_lado');
   const [baixando, setBaixando] = useState(false);
+  const [modalVacinasOpen, setModalVacinasOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const validationUrl = `${window.location.origin}/validar/pet/${pet.id}`;
@@ -143,6 +146,15 @@ export default function CarteirinhaDigital({ isOpen, onClose, pet }: Carteirinha
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setModalVacinasOpen(true)}
+              className="text-xs flex items-center gap-1.5 border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+              title="Abrir Caderneta de Vacinação e Medicamentos"
+            >
+              <Syringe size={13} className="text-emerald-600" /> Vacinas
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -365,11 +377,17 @@ export default function CarteirinhaDigital({ isOpen, onClose, pet }: Carteirinha
                         </span>
                       </div>
 
-                      <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                        pet.vacinado ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-amber-50 border-amber-200 text-amber-950'
-                      }`}>
+                      <div 
+                        onClick={() => setModalVacinasOpen(true)}
+                        className={`p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-transform hover:scale-[1.02] ${
+                          pet.vacinado ? 'bg-emerald-50 border-emerald-300 text-emerald-950 hover:bg-emerald-100/70' : 'bg-amber-50 border-amber-300 text-amber-950 hover:bg-amber-100/70'
+                        }`}
+                        title="Clique para ver ou registrar vacinas na Caderneta Oficial"
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase">Vacinação</span>
+                          <span className="text-[10px] font-bold uppercase flex items-center gap-1">
+                            <Syringe size={11} className="text-emerald-700" /> Vacinação
+                          </span>
                           {pet.vacinado ? (
                             <CheckCircle2 size={14} className="text-emerald-600" />
                           ) : (
@@ -377,7 +395,7 @@ export default function CarteirinhaDigital({ isOpen, onClose, pet }: Carteirinha
                           )}
                         </div>
                         <span className="text-xs font-extrabold mt-1">
-                          {pet.vacinado ? 'Em Dia (V10 / Raiva)' : 'Pendente'}
+                          {pet.vacinado ? 'Em Dia (Ver Doses)' : 'Pendente (Ver)'}
                         </span>
                       </div>
                     </div>
@@ -434,6 +452,21 @@ export default function CarteirinhaDigital({ isOpen, onClose, pet }: Carteirinha
           </a>
         </div>
       </div>
+
+      {modalVacinasOpen && (
+        <CarteiraVacinacaoModal
+          isOpen={modalVacinasOpen}
+          onClose={() => setModalVacinasOpen(false)}
+          pet={{
+            ...pet,
+            rga: rgaCode
+          }}
+          tutor={{
+            nome: pet.tutor_nome || 'Tutor',
+            telefone: pet.tutor_telefone
+          }}
+        />
+      )}
     </Modal>
   );
 }
