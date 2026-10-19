@@ -1070,10 +1070,21 @@ export default function GestaoBancoRacao() {
                   <span className="text-slate-500 block">Endereço e Bairro:</span>
                   <span className="font-semibold text-slate-900">{beneficiarioAnalise.endereco} - {beneficiarioAnalise.bairro} ({beneficiarioAnalise.cidade})</span>
                 </div>
-                <div className="col-span-2 pt-1 border-t border-slate-200 flex gap-4 font-bold text-slate-800">
-                  <span>🐕 {beneficiarioAnalise.qtd_caes} cães</span>
-                  <span>🐈 {beneficiarioAnalise.qtd_gatos} gatos</span>
-                  <span>Total: {beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais</span>
+                <div className="col-span-2 pt-1 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 font-bold text-slate-800">
+                  <div className="flex gap-4">
+                    <span>🐕 {beneficiarioAnalise.qtd_caes} cães</span>
+                    <span>🐈 {beneficiarioAnalise.qtd_gatos} gatos</span>
+                    <span>Total: {beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais</span>
+                  </div>
+                  {(beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos) > 7 ? (
+                    <span className="text-[11px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-300">
+                      ✅ Regra atendida (+ de 7 animais)
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
+                      ⚠️ Abaixo da regra (≤ 7 animais)
+                    </span>
+                  )}
                 </div>
               </div>
 

@@ -311,7 +311,7 @@ const MeusPets = () => {
               <span className="text-xs text-emerald-100 font-bold">• Arapongas - PR</span>
             </div>
             <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
-              Tem mais de 5 a 7 animais e possui Cadastro Único (CadÚnico) ou atua como Protetor?
+              Tem mais de 7 animais e possui Cadastro Único (CadÚnico) ou atua como Protetor?
             </h3>
             <p className="text-xs text-emerald-100 mt-0.5 max-w-2xl">
               Inscreva-se no <strong>Banco de Ração Municipal</strong>, anexe sua documentação e receba mensalmente sacos de ração gratuitos da Prefeitura para alimentar seus cães e gatos.

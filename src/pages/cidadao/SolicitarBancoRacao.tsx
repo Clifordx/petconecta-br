@@ -166,8 +166,9 @@ export default function SolicitarBancoRacao() {
       toast.error('Informe o endereço e bairro completo onde os animais ficam abrigados.');
       return;
     }
-    if (qtdCaes === 0 && qtdGatos === 0) {
-      toast.error('Informe a quantidade de cães ou gatos sob sua guarda.');
+    const totalAnimais = qtdCaes + qtdGatos;
+    if (totalAnimais <= 7) {
+      toast.error('Regra do Programa: É obrigatório possuir mais de 7 animais sob tutela (mínimo de 8 animais) para se inscrever no Banco de Ração Municipal.');
       return;
     }
     if (!termoAceito) {
@@ -226,7 +227,7 @@ export default function SolicitarBancoRacao() {
           Banco de Ração Municipal Solidário
         </h1>
         <p className="text-sm sm:text-base text-white/90 max-w-2xl">
-          Destinado a tutores de baixa renda cadastrados no <strong>CadÚnico</strong> e <strong>Protetores Independentes</strong> com muitos animais sob tutela (lares temporários de resgate).
+          Destinado a tutores de baixa renda cadastrados no <strong>CadÚnico</strong> e <strong>Protetores Independentes</strong> com <strong>mais de 7 animais</strong> sob tutela em Arapongas.
         </p>
       </div>
 
@@ -463,7 +464,7 @@ export default function SolicitarBancoRacao() {
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span><strong>Múltiplos Animais:</strong> Guarda responsável de 5 ou mais animais (ou protetor independente).</span>
+                <span><strong>Regra de Múltiplos Animais:</strong> Guarda responsável de <strong>mais de 7 animais</strong> (mínimo de 8 cães/gatos sob tutela).</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -623,9 +624,32 @@ export default function SolicitarBancoRacao() {
 
             {/* ETAPA 3: QUANTIDADE DE ANIMAIS E ESPAÇO */}
             <div className="space-y-3">
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2 border-b border-slate-100 pb-2">
-                <Dog className="w-4 h-4 text-emerald-600" /> 3. Animais sob sua Guarda e Espaço Físico
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2 gap-2">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
+                  <Dog className="w-4 h-4 text-emerald-600" /> 3. Animais sob sua Guarda (Regra: + de 7 animais)
+                </h3>
+                <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
+                  (qtdCaes + qtdGatos) > 7
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse'
+                }`}>
+                  {(qtdCaes + qtdGatos) > 7 
+                    ? `✅ Total: ${qtdCaes + qtdGatos} animais (Requisito > 7 atendido)`
+                    : `⚠️ Total: ${qtdCaes + qtdGatos} animais (Exige mais de 7)`}
+                </span>
+              </div>
+
+              {(qtdCaes + qtdGatos) <= 7 && (
+                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-black">Regra de Acesso ao Benefício:</strong>
+                    <span>
+                      O Banco de Ração Municipal é reservado para famílias com CadÚnico e protetores que tutelam <strong>mais de 7 animais</strong> (mínimo de 8 animais). Com {qtdCaes + qtdGatos} animais informados, a inscrição não poderá ser submetida.
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
