@@ -27,6 +27,7 @@ import InscricaoCastracao from './pages/filas/InscricaoCastracao';
 import SolicitarConsulta from './pages/filas/SolicitarConsulta';
 import MinhasDenuncias from './pages/denuncias/MinhasDenuncias';
 import MeuPerfil from './pages/perfil/MeuPerfil';
+import SolicitarBancoRacao from './pages/cidadao/SolicitarBancoRacao';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -45,6 +46,7 @@ import GestaoClinicas from './pages/admin/GestaoClinicas';
 import AtendimentoClinico from './pages/admin/AtendimentoClinico';
 import GestaoWhatsApp from './pages/admin/GestaoWhatsApp';
 import GestaoSOS from './pages/admin/GestaoSOS';
+import GestaoBancoRacao from './pages/admin/GestaoBancoRacao';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -111,6 +113,7 @@ function AppRoutes() {
         <Route path="/app/filas/consulta" element={<ProtectedRoute allowedRoles={['cidadao']}><SolicitarConsulta /></ProtectedRoute>} />
         <Route path="/app/denuncias" element={<ProtectedRoute allowedRoles={['cidadao']}><MinhasDenuncias /></ProtectedRoute>} />
         <Route path="/app/perfil" element={<ProtectedRoute><MeuPerfil /></ProtectedRoute>} />
+        <Route path="/app/banco-racao" element={<ProtectedRoute allowedRoles={['cidadao']}><SolicitarBancoRacao /></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Route>
@@ -133,6 +136,7 @@ function AppRoutes() {
         <Route path="/admin/atendimento-clinico" element={<AtendimentoClinico />} />
         <Route path="/admin/whatsapp" element={<GestaoWhatsApp />} />
         <Route path="/admin/sos" element={<GestaoSOS />} />
+        <Route path="/admin/banco-racao" element={<GestaoBancoRacao />} />
       </Route>
     </Routes>
   );

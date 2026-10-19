@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
+  Package, 
   Dog, 
   Cat, 
   Loader2, 
@@ -314,6 +315,12 @@ const MeusPets = () => {
               className="bg-blue-50 text-blue-800 border border-blue-200 px-4 py-2.5 rounded-lg font-medium hover:bg-blue-100 transition-colors flex items-center justify-center text-sm shadow-xs"
             >
               <Stethoscope className="w-4 h-4 mr-1.5" /> Consulta
+            </Link>
+            <Link 
+              to="/app/banco-racao"
+              className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-100 transition-colors flex items-center justify-center text-sm shadow-xs"
+            >
+              <Package className="w-4 h-4 mr-1.5" /> Banco de Ração
             </Link>
             <Link 
               to="/app/meus-pets/novo"

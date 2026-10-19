@@ -23,6 +23,7 @@ export function Header() {
       ? [
           { name: 'Meus Pets', path: '/app/meus-pets' },
           { name: 'Minhas Filas & Consultas', path: '/app/filas' },
+          { name: 'Banco de Ração', path: '/app/banco-racao' },
           { name: 'Adoção', path: '/animais' },
           { name: 'SOS Perdidos', path: '/sos' },
           { name: 'Feiras', path: '/feiras' },
@@ -220,6 +221,13 @@ export function Header() {
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Minhas Filas & Consultas
+                    </Link>
+                    <Link
+                      to="/app/banco-racao"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-emerald-600 hover:bg-gray-50"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Banco de Ração Municipal
                     </Link>
                   </>
                 ) : (
