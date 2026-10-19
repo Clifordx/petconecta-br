@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { toast } from 'sonner';
-import { buildConsultaMessage, openWhatsApp1Click } from '@/lib/whatsapp';
+import { buildConsultaMessage, dispararWhatsApp, openWhatsApp1Click } from '@/lib/whatsapp';
 import FichaAutorizacaoModal from '@/components/filas/FichaAutorizacaoModal';
 
 export default function GestaoConsultas() {
@@ -137,7 +137,7 @@ export default function GestaoConsultas() {
     setModalOpen(true);
   };
 
-  const dispararWhatsAppConsulta = (item: any, customClinicaId?: string, customData?: string) => {
+  const dispararWhatsAppConsulta = async (item: any, customClinicaId?: string, customData?: string) => {
     const telefone = item.perfis?.telefone;
     if (!telefone) {
       toast.warning('Este tutor não possui telefone cadastrado.');
@@ -158,8 +158,23 @@ export default function GestaoConsultas() {
       cidade: 'Arapongas - PR'
     });
 
-    openWhatsApp1Click(telefone, msg);
-    toast.success('WhatsApp aberto com a confirmação de consulta!');
+    const res = await dispararWhatsApp({
+      telefone,
+      tipo: 'consulta',
+      destinatarioNome: item.perfis?.nome,
+      mensagem: msg,
+      metadata: { protocolo: `AUT-CONS-${item.id.replace(/-/g, '').slice(0, 6).toUpperCase()}` }
+    });
+
+    if (res.sucesso) {
+      if (res.modo === 'manual') {
+        toast.info('Confirmação preparada e WhatsApp aberto para envio!');
+      } else {
+        toast.success('Notificação de consulta enviada automaticamente via robô de WhatsApp!');
+      }
+    } else {
+      toast.error(res.erro || 'Erro ao enviar notificação WhatsApp.');
+    }
   };
 
   const handleSalvar = async (e: React.FormEvent, notificarWhatsApp = false) => {
@@ -189,7 +204,7 @@ export default function GestaoConsultas() {
       toast.success('Consulta atualizada com sucesso!');
 
       if (notificarWhatsApp) {
-        dispararWhatsAppConsulta(selectedConsulta, clinicaId, dataFinal || undefined);
+        await dispararWhatsAppConsulta(selectedConsulta, clinicaId, dataFinal || undefined);
       }
 
       setModalOpen(false);

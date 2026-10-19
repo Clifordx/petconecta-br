@@ -4,7 +4,7 @@ import { Search, Calendar as CalendarIcon, CheckCircle, XCircle, MessageCircle, 
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { buildCastracaoMessage, openWhatsApp1Click } from '@/lib/whatsapp';
+import { buildCastracaoMessage, dispararWhatsApp, openWhatsApp1Click } from '@/lib/whatsapp';
 import FichaAutorizacaoModal from '@/components/filas/FichaAutorizacaoModal';
 
 export default function GestaoFila() {
@@ -120,7 +120,7 @@ export default function GestaoFila() {
     setFichaModalOpen(true);
   };
 
-  const dispararWhatsAppCastracao = (item: any, customClinicaId?: string, customData?: string) => {
+  const dispararWhatsAppCastracao = async (item: any, customClinicaId?: string, customData?: string) => {
     const telefone = item.perfis?.telefone;
     if (!telefone) {
       toast.warning('Este tutor não possui telefone cadastrado.');
@@ -147,8 +147,23 @@ export default function GestaoFila() {
       cidade: 'Arapongas - PR'
     });
 
-    openWhatsApp1Click(telefone, msg);
-    toast.success('WhatsApp aberto com as instruções de jejum e agendamento!');
+    const res = await dispararWhatsApp({
+      telefone,
+      tipo: 'castracao',
+      destinatarioNome: item.perfis?.nome,
+      mensagem: msg,
+      metadata: { protocolo: `AUT-CAST-${item.id.replace(/-/g, '').slice(0, 6).toUpperCase()}` }
+    });
+
+    if (res.sucesso) {
+      if (res.modo === 'manual') {
+        toast.info('Instruções preparadas e WhatsApp aberto para envio!');
+      } else {
+        toast.success('Notificação de castração enviada automaticamente via robô de WhatsApp!');
+      }
+    } else {
+      toast.error(res.erro || 'Erro ao enviar notificação WhatsApp.');
+    }
   };
 
   const handleSalvarModal = async (e: React.FormEvent, notificarWhatsApp = false) => {
@@ -192,7 +207,7 @@ export default function GestaoFila() {
       toast.success('Fila de castração atualizada com sucesso!');
 
       if (notificarWhatsApp && modalStatus === 'agendado') {
-        dispararWhatsAppCastracao(selectedItem, clinicaId, dataAgendada);
+        await dispararWhatsAppCastracao(selectedItem, clinicaId, dataAgendada);
       }
 
       setIsModalOpen(false);

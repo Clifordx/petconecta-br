@@ -1,10 +1,142 @@
 /**
- * Serviço de Notificações WhatsApp - PetConecta BR
+ * Serviço de Notificações e Gateway de WhatsApp - PetConecta BR
  * 
  * Suporta:
- * 1. Envio Imediato em 1 Clique (via WhatsApp Web / App, 100% gratuito)
- * 2. Integração Preparada para Robô Automático em Segundo Plano (Evolution API / Z-API / Meta)
+ * 1. Disparo 100% Automático em Segundo Plano (Evolution API, Z-API, Webhook n8n/Zapier)
+ * 2. Fallback Inteligente de 1-Clique (WhatsApp Web / App nativo)
+ * 3. Fila de Auditoria e Logs de Disparos
  */
+
+export type ProvedorWhatsApp = 'evolution' | 'zapi' | 'webhook' | 'manual';
+export type ModoDisparoWhatsApp = 'automatico' | 'manual' | 'hibrido';
+
+export interface ConfigWhatsApp {
+  ativo: boolean;
+  modo: ModoDisparoWhatsApp;
+  provedor: ProvedorWhatsApp;
+  
+  // Evolution API
+  evolutionUrl?: string; // Ex: https://api.whatsapp.arapongas.pr.gov.br
+  evolutionInstance?: string; // Ex: arapongas-pet
+  evolutionApiKey?: string;
+
+  // Z-API
+  zapiInstanceId?: string;
+  zapiToken?: string;
+  zapiClientToken?: string;
+
+  // Webhook Genérico (n8n, Zapier, Make)
+  webhookUrl?: string;
+  webhookToken?: string;
+
+  // Configurações Gerais
+  notificarCastracao: boolean;
+  notificarConsulta: boolean;
+  notificarAlta: boolean;
+  notificarDenuncia: boolean;
+  notificarVacina: boolean;
+}
+
+export interface LogWhatsApp {
+  id: string;
+  destinatarioNome: string;
+  telefone: string;
+  tipo: 'castracao' | 'consulta' | 'alta' | 'denuncia' | 'vacina' | 'teste';
+  mensagem: string;
+  modo: 'automatico' | 'manual';
+  provedor: string;
+  sucesso: boolean;
+  erro?: string;
+  data: string;
+}
+
+const CONFIG_STORAGE_KEY = 'petconecta_config_whatsapp';
+const LOGS_STORAGE_KEY = 'petconecta_logs_whatsapp';
+
+export const CONFIG_PADRAO_WHATSAPP: ConfigWhatsApp = {
+  ativo: true,
+  modo: 'automatico',
+  provedor: 'evolution',
+  evolutionUrl: 'https://api.evolution.exemplo.gov.br',
+  evolutionInstance: 'petconecta-arapongas',
+  evolutionApiKey: '',
+  zapiInstanceId: '',
+  zapiToken: '',
+  webhookUrl: '',
+  notificarCastracao: true,
+  notificarConsulta: true,
+  notificarAlta: true,
+  notificarDenuncia: true,
+  notificarVacina: true
+};
+
+export function getConfigWhatsApp(): ConfigWhatsApp {
+  try {
+    const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
+    if (saved) {
+      return { ...CONFIG_PADRAO_WHATSAPP, ...JSON.parse(saved) };
+    }
+  } catch (e) {
+    console.error('Erro ao ler config do WhatsApp:', e);
+  }
+  return CONFIG_PADRAO_WHATSAPP;
+}
+
+export function saveConfigWhatsApp(config: ConfigWhatsApp): void {
+  try {
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+  } catch (e) {
+    console.error('Erro ao salvar config do WhatsApp:', e);
+  }
+}
+
+export function getLogsWhatsApp(): LogWhatsApp[] {
+  try {
+    const saved = localStorage.getItem(LOGS_STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Erro ao ler logs do WhatsApp:', e);
+  }
+  return [];
+}
+
+export function registrarLogWhatsApp(log: Omit<LogWhatsApp, 'id' | 'data'>): LogWhatsApp {
+  const novo: LogWhatsApp = {
+    ...log,
+    id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    data: new Date().toISOString()
+  };
+
+  try {
+    const logs = getLogsWhatsApp();
+    logs.unshift(novo);
+    // Limita aos 150 registros mais recentes
+    if (logs.length > 150) logs.pop();
+    localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
+  } catch (e) {
+    console.error('Erro ao salvar log do WhatsApp:', e);
+  }
+
+  return novo;
+}
+
+export function limparLogsWhatsApp(): void {
+  localStorage.removeItem(LOGS_STORAGE_KEY);
+}
+
+/**
+ * Normaliza o telefone para o padrão internacional (DDI 55 + DDD + Número)
+ */
+export function formatPhoneNumber(telefone: string): string {
+  const digits = telefone.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+  return digits;
+}
 
 export interface CastracaoParams {
   tutorNome: string;
@@ -12,17 +144,31 @@ export interface CastracaoParams {
   especie?: string;
   raca?: string;
   clinicaNome: string;
+  clinicaEndereco?: string;
   dataAgendada: string | Date;
   cidade?: string;
+  protocolo?: string;
 }
 
 export interface ConsultaParams {
   tutorNome: string;
   petNome: string;
   clinicaNome: string;
+  clinicaEndereco?: string;
   dataConsulta: string | Date;
   motivo?: string;
   cidade?: string;
+  protocolo?: string;
+}
+
+export interface AltaMedicaParams {
+  tutorNome: string;
+  petNome: string;
+  clinicaNome: string;
+  clinicaEndereco?: string;
+  procedimento?: string;
+  cidade?: string;
+  retornoPontos?: string;
 }
 
 export interface DenunciaParams {
@@ -34,17 +180,12 @@ export interface DenunciaParams {
   cidade?: string;
 }
 
-/**
- * Normaliza o telefone para o padrão internacional (DDI 55 + DDD + Número)
- */
-export function formatPhoneNumber(telefone: string): string {
-  const digits = telefone.replace(/\D/g, '');
-  if (!digits) return '';
-  // Se for celular brasileiro sem DDI (10 ou 11 dígitos), adiciona 55
-  if (digits.length === 10 || digits.length === 11) {
-    return `55${digits}`;
-  }
-  return digits;
+export interface VacinaParams {
+  tutorNome: string;
+  petNome: string;
+  vacinaNome: string;
+  dataReforco: string;
+  cidade?: string;
 }
 
 /**
@@ -65,11 +206,10 @@ A cirurgia de castração gratuita do seu animal foi *agendada com sucesso*!
 
 📋 *DADOS DO AGENDAMENTO:*
 🐶 *Animal:* ${params.petNome} (${esp}${params.raca ? ` • ${params.raca}` : ''})
-🏥 *Clínica Conveniada:* ${params.clinicaNome}
+🏥 *Clínica Conveniada:* ${params.clinicaNome}${params.clinicaEndereco ? `\n📍 *Endereço:* ${params.clinicaEndereco}` : ''}
 📅 *Data:* ${dataFormatada}
 ⏰ *Horário de Chegada:* ${horaFormatada}
-📍 *Município:* ${cidade}
-
+${params.protocolo ? `🎫 *Protocolo:* ${params.protocolo}\n` : ''}
 ⚠️ *DOCUMENTOS E REQUISITOS OBRIGATÓRIOS (APRESENTAR NA CLÍNICA):*
 1. *Carteirinha Digital do Pet:* Com QR Code gerado pelo app PetConecta BR (no celular ou impressa).
 2. *Guia Oficial de Autorização:* Baixada na aba "Minhas Filas" do aplicativo.
@@ -94,12 +234,12 @@ export function buildConsultaMessage(params: ConsultaParams): string {
 *Atendimento Municipal de Saúde Animal • ${cidade}*
 
 Olá, *${params.tutorNome}*!
-A consulta veterinária do(a) seu(sua) pet *${params.petNome}* foi confirmada:
+A consulta veterinária do seu pet *${params.petNome}* foi confirmada:
 
-🏥 *Clínica:* ${params.clinicaNome}
+🏥 *Clínica:* ${params.clinicaNome}${params.clinicaEndereco ? `\n📍 *Endereço:* ${params.clinicaEndereco}` : ''}
 📅 *Data:* ${dataFormatada}
 ⏰ *Horário:* ${horaFormatada}
-${params.motivo ? `📋 *Motivo Registrado:* ${params.motivo}\n` : ''}
+${params.protocolo ? `🎫 *Protocolo:* ${params.protocolo}\n` : ''}${params.motivo ? `📋 *Motivo Registrado:* ${params.motivo}\n` : ''}
 ⚠️ *DOCUMENTOS OBRIGATÓRIOS (APRESENTAR NA RECEPÇÃO):*
 1. *Carteirinha Digital do Pet:* Com QR Code gerado pelo sistema PetConecta BR.
 2. *Guia Oficial de Consulta:* Disponível para download no app em "Minhas Filas".
@@ -108,7 +248,31 @@ ${params.motivo ? `📋 *Motivo Registrado:* ${params.motivo}\n` : ''}
 }
 
 /**
- * 3. MENSAGEM DE ANDAMENTO / DESPACHO DE DENÚNCIA
+ * 3. MENSAGEM DE ALTA MÉDICA PÓS-OPERATÓRIA
+ */
+export function buildAltaMedicaMessage(params: AltaMedicaParams): string {
+  const cidade = params.cidade || 'Arapongas - PR';
+
+  return `🎉 *PETCONECTA BR - ALTA MÉDICA E LIBERAÇÃO*
+*Saúde e Bem-Estar Animal • ${cidade}*
+
+Olá, *${params.tutorNome}*!
+Temos ótimas notícias: o procedimento de *${params.petNome}* na clínica *${params.clinicaNome}* foi finalizado com sucesso! 🐶🐱✨
+
+O animal já está acordado, monitorado e pronto para voltar para o conforto do seu lar.
+
+📍 *Endereço para Retirada:* ${params.clinicaEndereco || 'Arapongas - PR'}
+${params.retornoPontos ? `📅 *Retorno de Pontos:* ${params.retornoPontos}\n` : ''}
+⚠️ *LEMBRETES IMPORTANTES DE CUIDADOS EM CASA:*
+• Mantenha a roupa cirúrgica ou colar elizabetano (proibido lamber os pontos);
+• Siga a receita médica e os horários dos remédios prescritos;
+• Mantenha o animal em repouso absoluto em local limpo e aquecido.
+
+Obrigado pelo carinho e pela guarda responsável! ❤️`;
+}
+
+/**
+ * 4. MENSAGEM DE ANDAMENTO / DESPACHO DE DENÚNCIA
  */
 export function buildDenunciaMessage(params: DenunciaParams): string {
   const cidade = params.cidade || 'Arapongas - PR';
@@ -127,8 +291,26 @@ Agradecemos por exercer sua cidadania e nos ajudar a proteger os animais da noss
 }
 
 /**
- * 🚀 EXECUTA O ENVIO EM 1 CLIQUE
- * Abre o WhatsApp diretamente com o número e o texto já preenchidos.
+ * 5. MENSAGEM DE LEMBRETE DE REVACINAÇÃO
+ */
+export function buildVacinaMessage(params: VacinaParams): string {
+  const cidade = params.cidade || 'Arapongas - PR';
+  const dt = new Date(params.dataReforco).toLocaleDateString('pt-BR');
+
+  return `💉 *PETCONECTA BR - LEMBRETE DE REVACINAÇÃO*
+*Vigilância em Zoonoses • ${cidade}*
+
+Olá, *${params.tutorNome}*!
+Atenção à caderneta de saúde do(a) seu(sua) pet *${params.petNome}*:
+
+A dose de reforço da vacina *${params.vacinaNome}* está programada para *${dt}*.
+Manter as vacinas em dia protege o animal e toda a sua família contra graves doenças como raiva e cinomose.
+
+Consulte a Caderneta Sanitária no aplicativo PetConecta BR e procure uma clínica ou posto de vacinação credenciado! 🐾`;
+}
+
+/**
+ * 🚀 EXECUTA O ENVIO EM 1 CLIQUE (MANUAL)
  */
 export function openWhatsApp1Click(telefone: string, message: string): boolean {
   const cleanPhone = formatPhoneNumber(telefone);
@@ -142,44 +324,217 @@ export function openWhatsApp1Click(telefone: string, message: string): boolean {
 }
 
 /**
- * 🤖 ESTRUTURA PREPARADA PARA ROBÔ AUTOMÁTICO EM SEGUNDO PLANO
- * Se as variáveis de ambiente VITE_WHATSAPP_API_URL e VITE_WHATSAPP_API_KEY
- * forem configuradas no .env, este método dispara sozinho sem abrir tela.
+ * 🤖 ENVIA VIA EVOLUTION API (SEGUNDO PLANO)
  */
-export async function sendAutomatedWhatsAppBot(telefone: string, message: string): Promise<{ success: boolean; mode: 'bot' | 'manual'; error?: string }> {
-  const apiUrl = import.meta.env.VITE_WHATSAPP_API_URL;
-  const apiKey = import.meta.env.VITE_WHATSAPP_API_KEY;
-  const cleanPhone = formatPhoneNumber(telefone);
+async function enviarViaEvolutionApi(config: ConfigWhatsApp, phone: string, message: string) {
+  if (!config.evolutionUrl || !config.evolutionInstance) {
+    throw new Error('Evolution API não configurada (URL ou Instância ausente).');
+  }
+
+  const cleanUrl = config.evolutionUrl.replace(/\/$/, '');
+  const endpoint = `${cleanUrl}/message/sendText/${config.evolutionInstance}`;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(config.evolutionApiKey ? { 'apikey': config.evolutionApiKey } : {})
+    },
+    body: JSON.stringify({
+      number: phone,
+      text: message,
+      options: {
+        delay: 1200,
+        presence: 'composing',
+        linkPreview: false
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Evolution API retornou erro ${response.status}: ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * 🤖 ENVIA VIA Z-API (SEGUNDO PLANO)
+ */
+async function enviarViaZApi(config: ConfigWhatsApp, phone: string, message: string) {
+  if (!config.zapiInstanceId || !config.zapiToken) {
+    throw new Error('Z-API não configurada (Instance ID ou Token ausente).');
+  }
+
+  const endpoint = `https://api.z-api.io/instances/${config.zapiInstanceId}/token/${config.zapiToken}/send-text`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (config.zapiClientToken) {
+    headers['Client-Token'] = config.zapiClientToken;
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      phone,
+      message
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Z-API retornou erro ${response.status}: ${errorText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * 🤖 ENVIA VIA WEBHOOK CUSTOMIZADO (n8n, Zapier, Make)
+ */
+async function enviarViaWebhook(config: ConfigWhatsApp, phone: string, message: string, metadata?: any) {
+  if (!config.webhookUrl) {
+    throw new Error('URL do Webhook não configurada.');
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (config.webhookToken) {
+    headers['Authorization'] = `Bearer ${config.webhookToken}`;
+  }
+
+  const response = await fetch(config.webhookUrl, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      phone,
+      message,
+      event: 'whatsapp_notification',
+      timestamp: new Date().toISOString(),
+      metadata
+    })
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Webhook retornou erro ${response.status}: ${errorText}`);
+  }
+
+  return await response.json().catch(() => ({ ok: true }));
+}
+
+export interface DisparoOptions {
+  telefone: string;
+  destinatarioNome: string;
+  mensagem: string;
+  tipo: 'castracao' | 'consulta' | 'alta' | 'denuncia' | 'vacina' | 'teste';
+  metadata?: any;
+  forcarManual?: boolean;
+}
+
+export interface DisparoResult {
+  sucesso: boolean;
+  modo: 'automatico' | 'manual';
+  provedor: string;
+  erro?: string;
+}
+
+/**
+ * 🎯 MÉTODO CENTRAL DE DISPARO DE NOTIFICAÇÃO WHATSAPP
+ * 
+ * Se o modo automático estiver ativo e o gateway configurado,
+ * realiza o envio 100% em segundo plano sem abrir popups.
+ * Se houver erro ou o modo for manual, realiza fallback de 1-Clique.
+ */
+export async function dispararWhatsApp(options: DisparoOptions): Promise<DisparoResult> {
+  const config = getConfigWhatsApp();
+  const cleanPhone = formatPhoneNumber(options.telefone);
 
   if (!cleanPhone) {
-    return { success: false, mode: 'manual', error: 'Telefone inválido' };
+    return {
+      sucesso: false,
+      modo: 'manual',
+      provedor: 'nenhum',
+      erro: 'Número de telefone inválido ou em branco.'
+    };
   }
 
-  // Se o robô estiver configurado no servidor, dispara em segundo plano:
-  if (apiUrl) {
-    try {
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(apiKey ? { 'apikey': apiKey, 'Authorization': `Bearer ${apiKey}` } : {})
-        },
-        body: JSON.stringify({
-          number: cleanPhone,
-          text: message,
-          message: message
-        })
-      });
+  // Se o modo for manual explícito ou o usuário forçou manual
+  if (options.forcarManual || config.modo === 'manual' || !config.ativo) {
+    openWhatsApp1Click(cleanPhone, options.mensagem);
+    registrarLogWhatsApp({
+      destinatarioNome: options.destinatarioNome,
+      telefone: cleanPhone,
+      tipo: options.tipo,
+      mensagem: options.mensagem,
+      modo: 'manual',
+      provedor: 'whatsapp_web_1click',
+      sucesso: true
+    });
+    return {
+      sucesso: true,
+      modo: 'manual',
+      provedor: 'whatsapp_web_1click'
+    };
+  }
 
-      if (response.ok) {
-        return { success: true, mode: 'bot' };
-      }
-    } catch (err: any) {
-      console.warn('Falha no envio via robô, acionando fallback manual:', err);
+  // Tenta disparo automático em segundo plano
+  let provedorNome = config.provedor;
+  try {
+    if (config.provedor === 'evolution') {
+      await enviarViaEvolutionApi(config, cleanPhone, options.mensagem);
+    } else if (config.provedor === 'zapi') {
+      await enviarViaZApi(config, cleanPhone, options.mensagem);
+    } else if (config.provedor === 'webhook') {
+      await enviarViaWebhook(config, cleanPhone, options.mensagem, options.metadata);
+    } else {
+      // Fallback
+      throw new Error('Nenhum provedor de gateway selecionado.');
     }
-  }
 
-  // Se o robô não estiver configurado ou falhar, abre pelo método de 1 Clique:
-  openWhatsApp1Click(cleanPhone, message);
-  return { success: true, mode: 'manual' };
+    registrarLogWhatsApp({
+      destinatarioNome: options.destinatarioNome,
+      telefone: cleanPhone,
+      tipo: options.tipo,
+      mensagem: options.mensagem,
+      modo: 'automatico',
+      provedor: provedorNome,
+      sucesso: true
+    });
+
+    return {
+      sucesso: true,
+      modo: 'automatico',
+      provedor: provedorNome
+    };
+
+  } catch (err: any) {
+    console.warn(`[Robô WhatsApp] Falha no disparo automático (${provedorNome}):`, err);
+
+    registrarLogWhatsApp({
+      destinatarioNome: options.destinatarioNome,
+      telefone: cleanPhone,
+      tipo: options.tipo,
+      mensagem: options.mensagem,
+      modo: 'automatico',
+      provedor: provedorNome,
+      sucesso: false,
+      erro: err.message || 'Falha de conexão com a API do WhatsApp'
+    });
+
+    // Se o modo for híbrido ou falhar, abre o fallback de 1-Clique para não perder o contato com o cidadão!
+    openWhatsApp1Click(cleanPhone, options.mensagem);
+
+    return {
+      sucesso: false,
+      modo: 'manual',
+      provedor: provedorNome,
+      erro: err.message
+    };
+  }
 }

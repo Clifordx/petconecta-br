@@ -38,7 +38,7 @@ import { Badge } from '@/components/ui/Badge';
 import { toast } from 'sonner';
 import ReceitaAltaModal, { ReceitaAltaProps } from '@/components/clinica/ReceitaAltaModal';
 import CarteiraVacinacaoModal from '@/components/pets/CarteiraVacinacaoModal';
-import { openWhatsApp1Click } from '@/lib/whatsapp';
+import { openWhatsApp1Click, dispararWhatsApp, buildAltaMedicaMessage } from '@/lib/whatsapp';
 
 export default function AtendimentoClinico() {
   const [activeTab, setActiveTab] = useState<'checkin' | 'em_atendimento' | 'faturamento'>('checkin');
@@ -449,23 +449,38 @@ export default function AtendimentoClinico() {
   };
 
   // Notificar tutor via WhatsApp sobre alta do animal
-  const notificarAltaWhatsApp = (item: any) => {
+  const notificarAltaWhatsApp = async (item: any) => {
     const tel = item.perfis?.telefone;
     if (!tel) {
       toast.warning('Tutor sem telefone cadastrado.');
       return;
     }
 
-    const msg = 
-      `🐾 *ALTA CLÍNICA - PETCONECTA BR*\n\n` +
-      `Olá, *${item.perfis?.nome || 'Tutor(a)'}*!\n\n` +
-      `Informamos que o procedimento do seu pet *${item.pets?.nome}* na clínica *${selectedClinica?.nome || 'Conveniada Municipal'}* foi finalizado com sucesso! 🎉\n\n` +
-      `O animal já está acordado e pronto para voltar para casa com você.\n` +
-      `📍 *Endereço para retirada:* ${selectedClinica?.endereco || 'Arapongas - PR'}\n\n` +
-      `Lembre-se de seguir a prescrição médica e os cuidados pós-operatórios (manter a roupa cirúrgica ou colar elizabetano). Obrigado pelo carinho com seu amigo de quatro patas! ❤️🐶🐱`;
+    const msg = buildAltaMedicaMessage({
+      tutorNome: item.perfis?.nome || 'Tutor(a)',
+      petNome: item.pets?.nome || 'Animal',
+      clinicaNome: selectedClinica?.nome || 'Conveniada Municipal',
+      clinicaEndereco: selectedClinica?.endereco,
+      procedimento: item.tipoAtendimento === 'castracao' ? 'Cirurgia de Castração' : 'Consulta e Tratamento Clínico'
+    });
 
-    openWhatsApp1Click(tel, msg);
-    toast.success('WhatsApp aberto para notificar a alta do pet!');
+    const res = await dispararWhatsApp({
+      telefone: tel,
+      tipo: 'alta',
+      destinatarioNome: item.perfis?.nome,
+      mensagem: msg,
+      metadata: { protocolo: item.protocoloGuia }
+    });
+
+    if (res.sucesso) {
+      if (res.modo === 'manual') {
+        toast.info('Mensagem preparada e WhatsApp aberto para envio!');
+      } else {
+        toast.success('Notificação de alta enviada automaticamente via robô de WhatsApp!');
+      }
+    } else {
+      toast.error(res.erro || 'Erro ao notificar tutor via WhatsApp.');
+    }
   };
 
   // Câmera / Leitor de QR Code

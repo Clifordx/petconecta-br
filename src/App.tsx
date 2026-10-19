@@ -42,6 +42,7 @@ import DetalheAdocao from './pages/admin/DetalheAdocao';
 import Relatorios from './pages/admin/Relatorios';
 import GestaoClinicas from './pages/admin/GestaoClinicas';
 import AtendimentoClinico from './pages/admin/AtendimentoClinico';
+import GestaoWhatsApp from './pages/admin/GestaoWhatsApp';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -126,6 +127,7 @@ function AppRoutes() {
         <Route path="/admin/relatorios" element={<Relatorios />} />
         <Route path="/admin/clinicas" element={<GestaoClinicas />} />
         <Route path="/admin/atendimento-clinico" element={<AtendimentoClinico />} />
+        <Route path="/admin/whatsapp" element={<GestaoWhatsApp />} />
       </Route>
     </Routes>
   );

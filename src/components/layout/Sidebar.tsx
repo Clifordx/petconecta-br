@@ -11,7 +11,8 @@ import {
   HeartHandshake, 
   FileText,
   Users,
-  HeartPulse
+  HeartPulse,
+  Bot
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'Atendimento Clínico', icon: HeartPulse, path: '/admin/atendimento-clinico' },
+    { name: 'Robô WhatsApp', icon: Bot, path: '/admin/whatsapp' },
     { name: 'Pets', icon: Dog, path: '/admin/pets' },
     { name: 'Clínicas', icon: Building2, path: '/admin/clinicas' },
     { name: 'Castração', icon: Scissors, path: '/admin/castracao' },
