@@ -41,6 +41,7 @@ import NovaAdocao from './pages/admin/NovaAdocao';
 import DetalheAdocao from './pages/admin/DetalheAdocao';
 import Relatorios from './pages/admin/Relatorios';
 import GestaoClinicas from './pages/admin/GestaoClinicas';
+import AtendimentoClinico from './pages/admin/AtendimentoClinico';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -124,6 +125,7 @@ function AppRoutes() {
         <Route path="/admin/adocoes/:id" element={<DetalheAdocao />} />
         <Route path="/admin/relatorios" element={<Relatorios />} />
         <Route path="/admin/clinicas" element={<GestaoClinicas />} />
+        <Route path="/admin/atendimento-clinico" element={<AtendimentoClinico />} />
       </Route>
     </Routes>
   );

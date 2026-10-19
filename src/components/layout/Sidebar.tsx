@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
@@ -10,7 +10,8 @@ import {
   CalendarDays, 
   HeartHandshake, 
   FileText,
-  Users
+  Users,
+  HeartPulse
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+    { name: 'Atendimento Clínico', icon: HeartPulse, path: '/admin/atendimento-clinico' },
     { name: 'Pets', icon: Dog, path: '/admin/pets' },
     { name: 'Clínicas', icon: Building2, path: '/admin/clinicas' },
     { name: 'Castração', icon: Scissors, path: '/admin/castracao' },
