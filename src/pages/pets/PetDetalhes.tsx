@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat, CreditCard, QrCode, Syringe } from 'lucide-react';
+import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileText, Loader2, Dog, Cat, CreditCard, QrCode, Syringe, AlertTriangle, Printer, CheckCircle2 } from 'lucide-react';
+import CartazSOSModal from '@/components/sos/CartazSOSModal';
+import NovoAlertaSOSModal from '@/components/sos/NovoAlertaSOSModal';
+import { AnimalSOS, fetchAnimaisSOS, salvarAnimalSOS, marcarResolvidoSOS } from '@/lib/sos';
 import { supabase } from '@/lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +42,9 @@ const PetDetalhes = () => {
   const [tutor, setTutor] = useState<{ nome?: string; telefone?: string } | null>(null);
   const [castracaoPet, setCastracaoPet] = useState<{ id: string; status: string } | null>(null);
   const [consultaPet, setConsultaPet] = useState<{ id: string; status: string; data_consulta?: string } | null>(null);
+  const [modalNovoSosOpen, setModalNovoSosOpen] = useState(false);
+  const [modalCartazSosOpen, setModalCartazSosOpen] = useState(false);
+  const [sosAnimal, setSosAnimal] = useState<AnimalSOS | null>(null);
   const { user } = useAuth();
 
   
@@ -201,6 +207,11 @@ const PetDetalhes = () => {
         // Busca status em consultas
         const { data: conData } = await supabase.from('consultas').select('id, status, data_consulta').eq('pet_id', id).in('status', ['agendada', 'em_andamento', 'solicitada']).maybeSingle();
         if (conData) setConsultaPet(conData);
+
+        // Busca se o pet está em alerta SOS
+        const listaSos = await fetchAnimaisSOS();
+        const achado = listaSos.find(s => (s.pet_id === id || (s.nome.toLowerCase() === data.nome?.toLowerCase())) && s.status === 'ativo');
+        if (achado) setSosAnimal(achado);
       } catch (error: any) {
         toast.error('Erro ao carregar detalhes do pet');
         navigate('/app/meus-pets');
@@ -211,6 +222,49 @@ const PetDetalhes = () => {
 
     if (id) fetchPet();
   }, [id, navigate]);
+
+  const handleResolverPerdido = async () => {
+    if (!pet) return;
+    if (!window.confirm(`Confirmar que ${pet.nome} foi ENCONTRADO e já está seguro com você?`)) return;
+    try {
+      if (sosAnimal) {
+        await marcarResolvidoSOS(sosAnimal.id, pet.id);
+      }
+      await supabase.from('pets').update({ status: 'DISPONIVEL' }).eq('id', pet.id);
+      setPet({ ...pet, status: 'DISPONIVEL' });
+      setSosAnimal(null);
+      toast.success('🎉 Que excelente notícia! Seu pet foi retirado do alerta de busca.');
+    } catch {
+      toast.error('Erro ao atualizar situação do pet');
+    }
+  };
+
+  const handleAbrirCartazPet = () => {
+    if (sosAnimal) {
+      setModalCartazSosOpen(true);
+    } else if (pet) {
+      setSosAnimal({
+        id: `sos-${pet.id}`,
+        tipo: 'perdido',
+        status: 'ativo',
+        pet_id: pet.id,
+        nome: pet.nome,
+        especie: pet.especie?.toLowerCase().includes('gato') ? 'gato' : 'cachorro',
+        raca: pet.raca,
+        sexo: (pet.sexo?.toLowerCase() === 'femea' ? 'femea' : 'macho'),
+        porte: (pet.porte?.toLowerCase() as any) || 'medio',
+        cor: pet.cor,
+        foto_url: (pet.fotos_pet && pet.fotos_pet[0]?.url) || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600',
+        bairro: 'Centro',
+        cidade: 'Arapongas - PR',
+        data_ocorrencia: new Date().toISOString().split('T')[0],
+        contato_nome: tutor?.nome || user?.email || 'Tutor',
+        contato_telefone: tutor?.telefone || '(43) 99999-9999',
+        criado_em: new Date().toISOString()
+      });
+      setModalCartazSosOpen(true);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -254,6 +308,41 @@ const PetDetalhes = () => {
           )}
         </div>
       </div>
+
+      {/* Banner de Emergência se o pet estiver perdido */}
+      {(pet.status?.toUpperCase() === 'PERDIDO' || sosAnimal?.status === 'ativo') && (
+        <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center flex-shrink-0 animate-pulse">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-base font-black text-red-900 uppercase">
+                🚨 Animal marcado como DESAPARECIDO na Central SOS!
+              </h4>
+              <p className="text-xs text-red-700">
+                O cartaz de procura-se está ativo na rede pública de Arapongas. Se você já o encontrou, marque como resolvido abaixo.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleAbrirCartazPet}
+              className="flex-1 sm:flex-none px-3.5 py-2 bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Printer className="w-4 h-4 text-slate-600" /> Cartaz A4
+            </button>
+            <button
+              type="button"
+              onClick={handleResolverPerdido}
+              className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" /> 🎉 Já Encontrei!
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Sidebar Info */}
@@ -378,7 +467,7 @@ const PetDetalhes = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Ações Rápidas</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <button 
                 type="button"
                 onClick={() => setModalCarteirinhaOpen(true)}
@@ -398,6 +487,34 @@ const PetDetalhes = () => {
                 <span className="font-bold text-emerald-950 group-hover:text-emerald-700 text-xs">Carteira de Vacinas</span>
                 <span className="text-[10px] text-emerald-800/80 mt-0.5">Doses & Vermífugos</span>
               </button>
+
+              {/* Ação SOS / Perdido */}
+              <button 
+                type="button"
+                onClick={() => {
+                  if (pet.status?.toUpperCase() === 'PERDIDO' || sosAnimal?.status === 'ativo') {
+                    handleAbrirCartazPet();
+                  } else {
+                    setModalNovoSosOpen(true);
+                  }
+                }}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all group text-center cursor-pointer shadow-xs ${
+                  pet.status?.toUpperCase() === 'PERDIDO' || sosAnimal?.status === 'ativo'
+                    ? 'border-red-500 bg-red-50 hover:bg-red-100 text-red-950'
+                    : 'border-rose-200 bg-rose-50/50 hover:border-red-500 hover:bg-rose-100/70 text-slate-900'
+                }`}
+              >
+                <AlertTriangle className={`w-7 h-7 mb-2 transition-transform group-hover:scale-110 ${
+                  pet.status?.toUpperCase() === 'PERDIDO' || sosAnimal?.status === 'ativo' ? 'text-red-600 animate-pulse' : 'text-rose-500'
+                }`} />
+                <span className="font-bold text-xs">
+                  {pet.status?.toUpperCase() === 'PERDIDO' || sosAnimal?.status === 'ativo' ? 'Cartaz de Busca' : 'Alerta SOS'}
+                </span>
+                <span className="text-[10px] text-slate-500 mt-0.5">
+                  {pet.status?.toUpperCase() === 'PERDIDO' || sosAnimal?.status === 'ativo' ? 'Imprimir A4' : 'Pet Perdido?'}
+                </span>
+              </button>
+
 
               {pet.castrado ? (
                 <div className="flex flex-col items-center justify-center p-4 rounded-xl border border-gray-200 bg-gray-50 text-center opacity-85">
@@ -516,6 +633,26 @@ const PetDetalhes = () => {
           </div>
         </div>
       </div>
+
+            {/* Modal do Cartaz A4 de Busca SOS */}
+      <CartazSOSModal
+        isOpen={modalCartazSosOpen}
+        onClose={() => setModalCartazSosOpen(false)}
+        animal={sosAnimal}
+      />
+
+      {/* Modal de Publicação SOS */}
+      <NovoAlertaSOSModal
+        isOpen={modalNovoSosOpen}
+        onClose={() => setModalNovoSosOpen(false)}
+        onSuccess={(alvoSalvo) => {
+          setSosAnimal(alvoSalvo);
+          setPet({ ...pet, status: 'PERDIDO' });
+          setModalCartazSosOpen(true);
+        }}
+        tipoInicial="perdido"
+        petPreSelecionado={pet}
+      />
 
       {/* Modal da Carteirinha Digital */}
       {modalCarteirinhaOpen && (

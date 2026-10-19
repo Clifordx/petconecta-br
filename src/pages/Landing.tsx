@@ -29,6 +29,9 @@ const Landing = () => {
               <Link to="/cadastro" className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-200">
                 Começar Agora <ArrowRight className="h-5 w-5" />
               </Link>
+              <Link to="/sos" className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-200">
+                <AlertTriangle className="h-5 w-5" /> SOS Pets Perdidos
+              </Link>
               <Link to="/adocao" className="bg-white text-emerald-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 border-2 border-emerald-100 transition-colors flex items-center justify-center gap-2">
                 <Heart className="h-5 w-5" /> Animais para Adoção
               </Link>

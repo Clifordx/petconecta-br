@@ -24,18 +24,21 @@ export function Header() {
           { name: 'Meus Pets', path: '/app/meus-pets' },
           { name: 'Minhas Filas & Consultas', path: '/app/filas' },
           { name: 'Adoção', path: '/animais' },
+          { name: 'SOS Perdidos', path: '/sos' },
           { name: 'Feiras', path: '/feiras' },
           { name: 'Denúncias', path: '/denuncia' },
         ]
       : [
           { name: 'Painel Admin', path: '/admin/dashboard' },
           { name: 'Adoção', path: '/animais' },
+          { name: 'SOS Perdidos', path: '/sos' },
           { name: 'Feiras', path: '/feiras' },
           { name: 'Denúncias', path: '/denuncia' },
         ]
     : [
         { name: 'Início', path: '/' },
         { name: 'Adoção', path: '/animais' },
+        { name: 'SOS Perdidos', path: '/sos' },
         { name: 'Feiras', path: '/feiras' },
         { name: 'Denúncias', path: '/denuncia' },
       ];

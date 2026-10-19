@@ -16,6 +16,7 @@ import FeirasPublicas from './pages/public/FeirasPublicas';
 import NovaDenuncia from './pages/denuncias/NovaDenuncia';
 import AcompanharDenuncia from './pages/denuncias/AcompanharDenuncia';
 import ValidarPet from './pages/public/ValidarPet';
+import CentralSOS from './pages/public/CentralSOS';
 
 // Citizen / Tutor Pages
 import MeusPets from './pages/pets/MeusPets';
@@ -43,6 +44,7 @@ import Relatorios from './pages/admin/Relatorios';
 import GestaoClinicas from './pages/admin/GestaoClinicas';
 import AtendimentoClinico from './pages/admin/AtendimentoClinico';
 import GestaoWhatsApp from './pages/admin/GestaoWhatsApp';
+import GestaoSOS from './pages/admin/GestaoSOS';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -96,6 +98,8 @@ function AppRoutes() {
         <Route path="/denuncia" element={<NovaDenuncia />} />
         <Route path="/acompanhar-denuncia" element={<AcompanharDenuncia />} />
         <Route path="/validar/pet/:id" element={<ValidarPet />} />
+        <Route path="/sos" element={<CentralSOS />} />
+        <Route path="/achados-e-perdidos" element={<CentralSOS />} />
         
         {/* Rotas Cidadão/Tutor */}
         <Route path="/app/dashboard" element={<ProtectedRoute allowedRoles={['cidadao']}><MeusPets /></ProtectedRoute>} />
@@ -128,6 +132,7 @@ function AppRoutes() {
         <Route path="/admin/clinicas" element={<GestaoClinicas />} />
         <Route path="/admin/atendimento-clinico" element={<AtendimentoClinico />} />
         <Route path="/admin/whatsapp" element={<GestaoWhatsApp />} />
+        <Route path="/admin/sos" element={<GestaoSOS />} />
       </Route>
     </Routes>
   );
