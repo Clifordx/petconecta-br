@@ -17,6 +17,11 @@ export interface BeneficiarioRacao {
   status: 'aprovado' | 'em_analise' | 'rejeitado' | 'suspenso';
   motivo_rejeicao?: string;
   observacoes?: string;
+  documento_cadunico_url?: string;
+  documento_rg_url?: string;
+  comprovante_residencia_url?: string;
+  fotos_animais_url?: string[];
+  protocolo_solicitacao?: string;
   criado_em: string;
 }
 
@@ -225,6 +230,11 @@ export async function salvarBeneficiario(dados: Partial<BeneficiarioRacao>): Pro
     cota_mensal_kg: dados.cota_mensal_kg || calcularCotaSugerida(dados.qtd_caes || 0, dados.qtd_gatos || 0),
     status: dados.status || 'em_analise',
     observacoes: dados.observacoes,
+    documento_cadunico_url: dados.documento_cadunico_url,
+    documento_rg_url: dados.documento_rg_url,
+    comprovante_residencia_url: dados.comprovante_residencia_url,
+    fotos_animais_url: dados.fotos_animais_url,
+    protocolo_solicitacao: dados.protocolo_solicitacao || `INS-RAC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
     criado_em: dados.criado_em || new Date().toISOString()
   };
 

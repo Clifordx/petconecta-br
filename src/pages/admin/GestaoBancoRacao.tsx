@@ -15,6 +15,8 @@ import {
   Filter, 
   Wheat,
   Boxes,
+  Eye,
+  Camera,
   FileText,
   Calendar,
   X,
@@ -75,6 +77,12 @@ export default function GestaoBancoRacao() {
 
   // Modal de Novo / Editar Beneficiário
   const [modalBeneficiarioOpen, setModalBeneficiarioOpen] = useState(false);
+  // Modal de Análise de Documentos do Beneficiário
+  const [modalAnaliseOpen, setModalAnaliseOpen] = useState(false);
+  const [beneficiarioAnalise, setBeneficiarioAnalise] = useState<BeneficiarioRacao | null>(null);
+  const [cotaAprovadaKg, setCotaAprovadaKg] = useState(30);
+  const [motivoRejeicao, setMotivoRejeicao] = useState('');
+
   const [beneficiarioEditando, setBeneficiarioEditando] = useState<Partial<BeneficiarioRacao>>({
     tipo: 'baixa_renda',
     bairro: 'Centro',
@@ -566,23 +574,24 @@ export default function GestaoBancoRacao() {
 
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {b.status === 'aprovado' ? (
+                          <button
+                            onClick={() => {
+                              setBeneficiarioAnalise(b);
+                              setCotaAprovadaKg(b.cota_mensal_kg || 30);
+                              setModalAnaliseOpen(true);
+                            }}
+                            title="Ver Documentos e Analisar Inscrição"
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Analisar
+                          </button>
+
+                          {b.status === 'aprovado' && (
                             <button
                               onClick={() => abrirNovaEntrega(b.id)}
                               className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold"
                             >
                               Entregar Ração
-                            </button>
-                          ) : (
-                            <button
-                              onClick={async () => {
-                                await atualizarStatusBeneficiario(b.id, 'aprovado');
-                                toast.success(`Beneficiário ${b.nome} aprovado com cota de ${b.cota_mensal_kg} KG!`);
-                                carregarTudo();
-                              }}
-                              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold"
-                            >
-                              Aprovar
                             </button>
                           )}
                         </div>
@@ -1021,7 +1030,237 @@ export default function GestaoBancoRacao() {
         </Modal>
       )}
 
-      {/* MODAL DE RECIBO OFICIAL A4 */}
+            {/* MODAL DE ANÁLISE DE DOCUMENTOS E APROVAÇÃO */}
+      {modalAnaliseOpen && beneficiarioAnalise && (
+        <Modal
+          isOpen={modalAnaliseOpen}
+          onClose={() => setModalAnaliseOpen(false)}
+          title={`Análise de Inscrição: ${beneficiarioAnalise.nome}`}
+        >
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto p-1">
+            
+            {/* DADOS BÁSICOS */}
+            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-500 uppercase">Protocolo:</span>
+                <span className="font-mono font-black text-slate-900 bg-white px-2 py-0.5 rounded-sm border border-slate-300">
+                  {beneficiarioAnalise.protocolo_solicitacao || 'INS-RAC-2026'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200">
+                <div>
+                  <span className="text-slate-500 block">CPF:</span>
+                  <span className="font-mono font-bold text-slate-900">{beneficiarioAnalise.cpf}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Telefone:</span>
+                  <span className="font-bold text-slate-900">{beneficiarioAnalise.telefone}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block">Categoria:</span>
+                  <span className="font-bold text-emerald-800 capitalize">{beneficiarioAnalise.tipo.replace('_', ' ')}</span>
+                </div>
+                {beneficiarioAnalise.nis_cadunico && (
+                  <div>
+                    <span className="text-slate-500 block">NIS CadÚnico:</span>
+                    <span className="font-mono font-bold text-slate-900">{beneficiarioAnalise.nis_cadunico}</span>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <span className="text-slate-500 block">Endereço e Bairro:</span>
+                  <span className="font-semibold text-slate-900">{beneficiarioAnalise.endereco} - {beneficiarioAnalise.bairro} ({beneficiarioAnalise.cidade})</span>
+                </div>
+                <div className="col-span-2 pt-1 border-t border-slate-200 flex gap-4 font-bold text-slate-800">
+                  <span>🐕 {beneficiarioAnalise.qtd_caes} cães</span>
+                  <span>🐈 {beneficiarioAnalise.qtd_gatos} gatos</span>
+                  <span>Total: {beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais</span>
+                </div>
+              </div>
+
+              {beneficiarioAnalise.observacoes && (
+                <div className="pt-2 border-t border-slate-200 text-slate-700 italic">
+                  <strong>Observações do solicitante:</strong> "{beneficiarioAnalise.observacoes}"
+                </div>
+              )}
+            </div>
+
+            {/* DOCUMENTOS ENVIADOS */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-xs text-slate-800 uppercase tracking-wider">
+                Documentos Comprobatórios Anexados:
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                
+                {/* 1. CadUnico */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <span className="font-bold text-slate-700 block">Comprovante CadÚnico:</span>
+                  {beneficiarioAnalise.documento_cadunico_url ? (
+                    <div className="space-y-1.5">
+                      <img 
+                        src={beneficiarioAnalise.documento_cadunico_url} 
+                        alt="CadÚnico" 
+                        className="w-full h-32 object-contain bg-white rounded-lg border border-slate-200"
+                      />
+                      <a 
+                        href={beneficiarioAnalise.documento_cadunico_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[11px] font-bold text-emerald-700 hover:underline block text-center"
+                      >
+                        Ver Documento Completo
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 italic">Não anexado</p>
+                  )}
+                </div>
+
+                {/* 2. RG / CNH */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <span className="font-bold text-slate-700 block">Documento de Identidade (RG):</span>
+                  {beneficiarioAnalise.documento_rg_url ? (
+                    <div className="space-y-1.5">
+                      <img 
+                        src={beneficiarioAnalise.documento_rg_url} 
+                        alt="RG" 
+                        className="w-full h-32 object-contain bg-white rounded-lg border border-slate-200"
+                      />
+                      <a 
+                        href={beneficiarioAnalise.documento_rg_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[11px] font-bold text-emerald-700 hover:underline block text-center"
+                      >
+                        Ver Documento Completo
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 italic">Não anexado</p>
+                  )}
+                </div>
+
+                {/* 3. Comprovante de Residência */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <span className="font-bold text-slate-700 block">Comprovante de Residência:</span>
+                  {beneficiarioAnalise.comprovante_residencia_url ? (
+                    <div className="space-y-1.5">
+                      <img 
+                        src={beneficiarioAnalise.comprovante_residencia_url} 
+                        alt="Residência" 
+                        className="w-full h-32 object-contain bg-white rounded-lg border border-slate-200"
+                      />
+                      <a 
+                        href={beneficiarioAnalise.comprovante_residencia_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[11px] font-bold text-emerald-700 hover:underline block text-center"
+                      >
+                        Ver Documento Completo
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 italic">Não anexado</p>
+                  )}
+                </div>
+
+                {/* 4. Fotos dos Animais */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                  <span className="font-bold text-slate-700 block">Foto dos Animais / Local:</span>
+                  {beneficiarioAnalise.fotos_animais_url && beneficiarioAnalise.fotos_animais_url.length > 0 ? (
+                    <div className="space-y-1.5">
+                      <img 
+                        src={beneficiarioAnalise.fotos_animais_url[0]} 
+                        alt="Animais" 
+                        className="w-full h-32 object-contain bg-white rounded-lg border border-slate-200"
+                      />
+                      <a 
+                        href={beneficiarioAnalise.fotos_animais_url[0]} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="text-[11px] font-bold text-emerald-700 hover:underline block text-center"
+                      >
+                        Ver Foto Ampliada
+                      </a>
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 italic">Não anexado</p>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+            {/* DEFINIÇÃO DA COTA E APROVAÇÃO */}
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
+              <label className="block text-xs font-bold text-emerald-950">
+                Definir Cota Mensal Concedida (KG de ração por mês):
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="5"
+                  max="300"
+                  value={cotaAprovadaKg}
+                  onChange={(e) => setCotaAprovadaKg(Number(e.target.value))}
+                  className="w-28 p-2 font-black text-lg bg-white border border-emerald-400 rounded-xl text-center text-emerald-900"
+                />
+                <span className="text-xs text-slate-600">
+                  Sugerido para {beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais: <strong>{beneficiarioAnalise.cota_mensal_kg || 30} KG</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* BOTÕES DE DECISÃO */}
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={async () => {
+                  const mot = prompt('Informe o motivo da rejeição ou pendência para o solicitante:');
+                  if (!mot) return;
+                  await atualizarStatusBeneficiario(beneficiarioAnalise.id, 'rejeitado', undefined, mot);
+                  toast.info('Inscrição marcada como rejeitada/pendente.');
+                  setModalAnaliseOpen(false);
+                  carregarTudo();
+                }}
+                className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 rounded-xl text-xs font-bold"
+              >
+                Rejeitar / Solicitar Correção
+              </button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModalAnaliseOpen(false)}
+                  className="text-xs"
+                >
+                  Fechar
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={async () => {
+                    await atualizarStatusBeneficiario(beneficiarioAnalise.id, 'aprovado', cotaAprovadaKg);
+                    toast.success(`Beneficiário ${beneficiarioAnalise.nome} APROVADO com cota de ${cotaAprovadaKg} KG/mês!`);
+                    setModalAnaliseOpen(false);
+                    carregarTudo();
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold"
+                >
+                  ✅ Aprovar Inscrição & Cota
+                </Button>
+              </div>
+            </div>
+
+          </div>
+        </Modal>
+      )}
+
+{/* MODAL DE RECIBO OFICIAL A4 */}
       <ReciboEntregaRacaoModal
         isOpen={reciboModalOpen}
         onClose={() => setReciboModalOpen(false)}

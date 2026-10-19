@@ -12,7 +12,8 @@ import {
   Clock, 
   CheckCircle2, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Wheat
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -296,7 +297,38 @@ const MeusPets = () => {
         </div>
       )}
 
-      {/* SEÇÃO PRINCIPAL: MEUS PETS */}
+            {/* BANNER DE DIVULGAÇÃO DO BANCO DE RAÇÃO */}
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 rounded-2xl p-4 sm:p-5 text-white shadow-sm flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-white/20 backdrop-blur-xs rounded-xl flex-shrink-0">
+            <Package className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-wider bg-white/25 px-2 py-0.5 rounded-sm">
+                Programa Municipal Solidário
+              </span>
+              <span className="text-xs text-emerald-100 font-bold">• Arapongas - PR</span>
+            </div>
+            <h3 className="text-base sm:text-lg font-black text-white mt-0.5">
+              Tem mais de 5 a 7 animais e possui Cadastro Único (CadÚnico) ou atua como Protetor?
+            </h3>
+            <p className="text-xs text-emerald-100 mt-0.5 max-w-2xl">
+              Inscreva-se no <strong>Banco de Ração Municipal</strong>, anexe sua documentação e receba mensalmente sacos de ração gratuitos da Prefeitura para alimentar seus cães e gatos.
+            </p>
+          </div>
+        </div>
+
+        <Link
+          to="/app/banco-racao"
+          className="w-full md:w-auto px-5 py-2.5 bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 flex-shrink-0"
+        >
+          <Wheat className="w-4 h-4 text-emerald-600" />
+          Inscrever-se no Banco de Ração
+        </Link>
+      </div>
+
+{/* SEÇÃO PRINCIPAL: MEUS PETS */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
