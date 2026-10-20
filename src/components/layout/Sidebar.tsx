@@ -13,7 +13,8 @@ import {
   Users,
   HeartPulse,
   Bot,
-  Package
+  Package,
+  ShoppingBag
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -34,7 +35,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { name: 'Atendimento Clínico', icon: HeartPulse, path: '/admin/atendimento-clinico' },
     { name: 'Robô WhatsApp', icon: Bot, path: '/admin/whatsapp' },
-    { name: 'Banco de Ração', icon: Package, path: '/admin/banco-racao' },
+    { name: 'Banco de Ração', icon: Package, path: '/admin/banco-racao' },
+    { name: 'Lojinha Pet & 3D', icon: ShoppingBag, path: '/admin/loja' },
+    { name: 'Lojinha Pet & 3D', icon: ShoppingBag, path: '/admin/loja' },
     { name: 'SOS Perdidos', icon: AlertTriangle, path: '/admin/sos' },
     { name: 'Pets', icon: Dog, path: '/admin/pets' },
     { name: 'Clínicas', icon: Building2, path: '/admin/clinicas' },

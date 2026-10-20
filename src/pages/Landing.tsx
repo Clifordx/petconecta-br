@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Stethoscope, AlertTriangle, Home, Calendar, CreditCard, Shield, Dog, Cat, ArrowRight } from 'lucide-react';
+import { Heart, Stethoscope, AlertTriangle, Home, Calendar, CreditCard, Shield, Dog, Cat, ArrowRight, ShoppingBag, Sparkles, Printer } from 'lucide-react';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
   <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-md transition-shadow">
@@ -28,6 +28,9 @@ const Landing = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/cadastro" className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-200">
                 Começar Agora <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link to="/loja" className="bg-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-purple-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-purple-200">
+                <ShoppingBag className="h-5 w-5" /> Lojinha Pet & 3D
               </Link>
               <Link to="/sos" className="bg-red-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-200">
                 <AlertTriangle className="h-5 w-5" /> SOS Pets Perdidos
@@ -117,6 +120,236 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Seção Lojinha Pet & Impressão 3D Solidária */}
+      <section className="py-20 bg-gradient-to-b from-white to-purple-50/50 border-y border-purple-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-900 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                Lojinha PetConecta BR • Impressão 3D & Acessórios
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
+                Produtos Exclusivos para o seu Pet
+              </h2>
+              <p className="text-base text-gray-600 mt-2 max-w-2xl">
+                Adquira itens personalizados em <strong>Impressão 3D</strong> (como plaquinhas inteligentes com QR Code), <strong>caminhas ortopédicas confortáveis</strong> e <strong>coleiras com nome gravado</strong>. Toda a renda apoia o Banco de Ração Municipal de Arapongas!
+              </p>
+            </div>
+            <div>
+              <Link
+                to="/loja"
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3.5 rounded-xl font-bold text-sm shadow-md transition-all hover:scale-105"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Ver Todos os Produtos da Loja <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="bg-white rounded-2xl border border-purple-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                <img
+                  src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=800"
+                  alt="Plaquinha 3D"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute top-3 left-3 bg-purple-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md shadow-xs flex items-center gap-1">
+                  <Printer className="w-3 h-3" /> Impressão 3D
+                </span>
+                <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                  QR Code Integrado
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-bold text-base text-gray-900">Plaquinha de Identificação 3D</h3>
+                  <p className="text-xs text-gray-500 mt-1">Nome em relevo na frente e QR Code que abre a Carteirinha Digital ou WhatsApp do tutor no verso.</p>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-black text-emerald-800">R$ 19,90</span>
+                  <Link to="/loja" className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                    Personalizar <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-white rounded-2xl border border-purple-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                <img
+                  src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=800"
+                  alt="Caminha Nuvem"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md shadow-xs">
+                  Conforto Máximo
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-bold text-base text-gray-900">Caminha Nuvem Ortopédica Antiestresse</h3>
+                  <p className="text-xs text-gray-500 mt-1">Pelúcia macia hipoalergênica, fundo impermeável e zíper para lavar na máquina. Vários tamanhos.</p>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-black text-emerald-800">R$ 84,90</span>
+                  <Link to="/loja" className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                    Ver Opções <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-white rounded-2xl border border-purple-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                <img
+                  src="https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&q=80&w=800"
+                  alt="Coleira Personalizada"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute top-3 left-3 bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md shadow-xs">
+                  Refletiva Noturna
+                </span>
+                <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                  Gravação a Laser
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-bold text-base text-gray-900">Coleira Personalizada com Fivela Gravada</h3>
+                  <p className="text-xs text-gray-500 mt-1">Nylon reforçado com fitas refletivas e gravação a laser permanente do nome do animal e telefones.</p>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-black text-emerald-800">R$ 42,00</span>
+                  <Link to="/loja" className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                    Personalizar <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Seção Lojinha Pet & Impressão 3D Solidária */}
+      <section className="py-20 bg-gradient-to-b from-white to-purple-50/50 border-y border-purple-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-900 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                Lojinha PetConecta BR • Impressão 3D & Acessórios
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
+                Produtos Exclusivos para o seu Pet
+              </h2>
+              <p className="text-base text-gray-600 mt-2 max-w-2xl">
+                Adquira itens personalizados em <strong>Impressão 3D</strong> (como plaquinhas inteligentes com QR Code), <strong>caminhas ortopédicas confortáveis</strong> e <strong>coleiras com nome gravado</strong>. Toda a renda apoia o Banco de Ração Municipal de Arapongas!
+              </p>
+            </div>
+            <div>
+              <Link
+                to="/loja"
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3.5 rounded-xl font-bold text-sm shadow-md transition-all hover:scale-105"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Ver Todos os Produtos da Loja <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="bg-white rounded-2xl border border-purple-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                <img
+                  src="https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=800"
+                  alt="Plaquinha 3D"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute top-3 left-3 bg-purple-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md shadow-xs flex items-center gap-1">
+                  <Printer className="w-3 h-3" /> Impressão 3D
+                </span>
+                <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                  QR Code Integrado
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-bold text-base text-gray-900">Plaquinha de Identificação 3D</h3>
+                  <p className="text-xs text-gray-500 mt-1">Nome em relevo na frente e QR Code que abre a Carteirinha Digital ou WhatsApp do tutor no verso.</p>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-black text-emerald-800">R$ 19,90</span>
+                  <Link to="/loja" className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                    Personalizar <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-white rounded-2xl border border-purple-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                <img
+                  src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=800"
+                  alt="Caminha Nuvem"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md shadow-xs">
+                  Conforto Máximo
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-bold text-base text-gray-900">Caminha Nuvem Ortopédica Antiestresse</h3>
+                  <p className="text-xs text-gray-500 mt-1">Pelúcia macia hipoalergênica, fundo impermeável e zíper para lavar na máquina. Vários tamanhos.</p>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-black text-emerald-800">R$ 84,90</span>
+                  <Link to="/loja" className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                    Ver Opções <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-white rounded-2xl border border-purple-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+              <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                <img
+                  src="https://images.unsplash.com/photo-1535294435445-d7249524ef2e?auto=format&fit=crop&q=80&w=800"
+                  alt="Coleira Personalizada"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute top-3 left-3 bg-blue-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-md shadow-xs">
+                  Refletiva Noturna
+                </span>
+                <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs">
+                  Gravação a Laser
+                </span>
+              </div>
+              <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="font-bold text-base text-gray-900">Coleira Personalizada com Fivela Gravada</h3>
+                  <p className="text-xs text-gray-500 mt-1">Nylon reforçado com fitas refletivas e gravação a laser permanente do nome do animal e telefones.</p>
+                </div>
+                <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xl font-black text-emerald-800">R$ 42,00</span>
+                  <Link to="/loja" className="text-xs font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                    Personalizar <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Como Funciona */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

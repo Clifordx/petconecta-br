@@ -17,6 +17,7 @@ import NovaDenuncia from './pages/denuncias/NovaDenuncia';
 import AcompanharDenuncia from './pages/denuncias/AcompanharDenuncia';
 import ValidarPet from './pages/public/ValidarPet';
 import CentralSOS from './pages/public/CentralSOS';
+import LojaPublica from './pages/loja/LojaPublica';
 
 // Citizen / Tutor Pages
 import MeusPets from './pages/pets/MeusPets';
@@ -47,6 +48,7 @@ import AtendimentoClinico from './pages/admin/AtendimentoClinico';
 import GestaoWhatsApp from './pages/admin/GestaoWhatsApp';
 import GestaoSOS from './pages/admin/GestaoSOS';
 import GestaoBancoRacao from './pages/admin/GestaoBancoRacao';
+import GestaoLoja from './pages/admin/GestaoLoja';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
@@ -102,6 +104,7 @@ function AppRoutes() {
         <Route path="/validar/pet/:id" element={<ValidarPet />} />
         <Route path="/sos" element={<CentralSOS />} />
         <Route path="/achados-e-perdidos" element={<CentralSOS />} />
+        <Route path="/loja" element={<LojaPublica />} />
         
         {/* Rotas Cidadão/Tutor */}
         <Route path="/app/dashboard" element={<ProtectedRoute allowedRoles={['cidadao']}><MeusPets /></ProtectedRoute>} />
@@ -114,6 +117,7 @@ function AppRoutes() {
         <Route path="/app/denuncias" element={<ProtectedRoute allowedRoles={['cidadao']}><MinhasDenuncias /></ProtectedRoute>} />
         <Route path="/app/perfil" element={<ProtectedRoute><MeuPerfil /></ProtectedRoute>} />
         <Route path="/app/banco-racao" element={<ProtectedRoute allowedRoles={['cidadao']}><SolicitarBancoRacao /></ProtectedRoute>} />
+        <Route path="/app/loja" element={<ProtectedRoute allowedRoles={['cidadao']}><LojaPublica /></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Route>
@@ -137,6 +141,7 @@ function AppRoutes() {
         <Route path="/admin/whatsapp" element={<GestaoWhatsApp />} />
         <Route path="/admin/sos" element={<GestaoSOS />} />
         <Route path="/admin/banco-racao" element={<GestaoBancoRacao />} />
+        <Route path="/admin/loja" element={<GestaoLoja />} />
       </Route>
     </Routes>
   );

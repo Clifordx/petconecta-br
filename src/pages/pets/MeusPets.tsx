@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   Calendar,
   AlertCircle,
-  Wheat
+  Wheat,
+  ShoppingBag
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -353,6 +354,12 @@ const MeusPets = () => {
               className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-2.5 rounded-lg font-medium hover:bg-emerald-100 transition-colors flex items-center justify-center text-sm shadow-xs"
             >
               <Package className="w-4 h-4 mr-1.5" /> Banco de Ração
+            </Link>
+            <Link 
+              to="/loja"
+              className="bg-purple-50 text-purple-800 border border-purple-200 px-4 py-2.5 rounded-lg font-medium hover:bg-purple-100 transition-colors flex items-center justify-center text-sm shadow-xs"
+            >
+              <ShoppingBag className="w-4 h-4 mr-1.5 text-purple-600" /> Lojinha & 3D
             </Link>
             <Link 
               to="/app/meus-pets/novo"

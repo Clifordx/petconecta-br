@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, PawPrint, LogOut, Settings, MapPin, ClipboardList, Stethoscope, Scissors } from 'lucide-react';
+import { Menu, X, PawPrint, LogOut, Settings, MapPin, ClipboardList, Stethoscope, Scissors, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
@@ -22,8 +22,9 @@ export function Header() {
     ? isCidadao
       ? [
           { name: 'Meus Pets', path: '/app/meus-pets' },
-          { name: 'Minhas Filas & Consultas', path: '/app/filas' },
+          { name: 'Lojinha Pet & 3D', path: '/loja' },
           { name: 'Banco de Ração', path: '/app/banco-racao' },
+          { name: 'Filas & Consultas', path: '/app/filas' },
           { name: 'Adoção', path: '/animais' },
           { name: 'SOS Perdidos', path: '/sos' },
           { name: 'Feiras', path: '/feiras' },
@@ -31,6 +32,7 @@ export function Header() {
         ]
       : [
           { name: 'Painel Admin', path: '/admin/dashboard' },
+          { name: 'Lojinha Pet', path: '/loja' },
           { name: 'Adoção', path: '/animais' },
           { name: 'SOS Perdidos', path: '/sos' },
           { name: 'Feiras', path: '/feiras' },
@@ -38,6 +40,7 @@ export function Header() {
         ]
     : [
         { name: 'Início', path: '/' },
+        { name: 'Lojinha Pet & 3D', path: '/loja' },
         { name: 'Adoção', path: '/animais' },
         { name: 'SOS Perdidos', path: '/sos' },
         { name: 'Feiras', path: '/feiras' },
@@ -116,6 +119,14 @@ export function Header() {
                         >
                           <ClipboardList className="h-4 w-4 mr-2.5 text-emerald-600" />
                           Minhas Filas & Consultas
+                        </Link>
+                        <Link
+                          to="/loja"
+                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          <ShoppingBag className="h-4 w-4 mr-2.5 text-purple-600" />
+                          Lojinha Pet Solidária & 3D
                         </Link>
                       </>
                     ) : (
