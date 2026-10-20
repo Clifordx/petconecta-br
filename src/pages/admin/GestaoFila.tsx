@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchClinicasParceiras, isUsuarioClinica, getClinicaIdDoUsuario } from '@/lib/clinicas';
 import { Search, Calendar as CalendarIcon, CheckCircle, XCircle, MessageCircle, RotateCcw, Edit, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Modal } from '@/components/ui/Modal';
@@ -35,9 +36,9 @@ export default function GestaoFila() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // 1. Puxa as clínicas para o dropdown de agendamento
-      const { data: clinicasData } = await supabase.from('clinicas_parceiras').select('*');
-      setClinicas(clinicasData || []);
+      // 1. Puxa as clínicas parceiras
+      const clinicasLista = await fetchClinicasParceiras();
+      setClinicas(clinicasLista);
 
       // 2. Puxa a fila com os relacionamentos corretos
       const { data: filaData, error } = await supabase

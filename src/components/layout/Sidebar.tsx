@@ -29,31 +29,39 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { profile, organization } = useAuth();
   const location = useLocation();
 
+  const isClinica = profile?.tipo_perfil === 'veterinario' || Boolean(profile?.clinica_id);
   const isAdmin = profile?.tipo_perfil === 'super_admin' || profile?.tipo_perfil === 'admin_prefeitura';
 
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { name: 'Atendimento Clínico', icon: HeartPulse, path: '/admin/atendimento-clinico' },
-    { name: 'Robô WhatsApp', icon: Bot, path: '/admin/whatsapp' },
-    { name: 'Banco de Ração', icon: Package, path: '/admin/banco-racao' },
-    { name: 'Lojinha Pet & 3D', icon: ShoppingBag, path: '/admin/loja' },
-    { name: 'SOS Perdidos', icon: AlertTriangle, path: '/admin/sos' },
-    { name: 'Pets', icon: Dog, path: '/admin/pets' },
-    { name: 'Clínicas', icon: Building2, path: '/admin/clinicas' },
-    { name: 'Castração', icon: Scissors, path: '/admin/castracao' },
-    { name: 'Consultas', icon: Stethoscope, path: '/admin/consultas' },
-    { name: 'Denúncias', icon: AlertTriangle, path: '/admin/denuncias' },
-    { name: 'Feiras', icon: CalendarDays, path: '/admin/feiras' },
-    { name: 'Adoções', icon: HeartHandshake, path: '/admin/adocoes' },
-    { name: 'Relatórios', icon: FileText, path: '/admin/relatorios' },
-    ...(isAdmin ? [{ name: 'Usuários', icon: Users, path: '/admin/usuarios' }] : []),
-  ];
+  const menuItems = isClinica
+    ? [
+        { name: 'Atendimento Clínico', icon: HeartPulse, path: '/admin/atendimento-clinico' },
+        { name: 'Consultas da Clínica', icon: Stethoscope, path: '/admin/consultas' },
+        { name: 'Castrações da Clínica', icon: Scissors, path: '/admin/castracao' },
+        { name: 'Pets Atendidos', icon: Dog, path: '/admin/pets' },
+      ]
+    : [
+        { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+        { name: 'Atendimento Clínico', icon: HeartPulse, path: '/admin/atendimento-clinico' },
+        { name: 'Robô WhatsApp', icon: Bot, path: '/admin/whatsapp' },
+        { name: 'Banco de Ração', icon: Package, path: '/admin/banco-racao' },
+        { name: 'Lojinha Pet & 3D', icon: ShoppingBag, path: '/admin/loja' },
+        { name: 'SOS Perdidos', icon: AlertTriangle, path: '/admin/sos' },
+        { name: 'Pets', icon: Dog, path: '/admin/pets' },
+        { name: 'Clínicas Parceiras', icon: Building2, path: '/admin/clinicas' },
+        { name: 'Castração', icon: Scissors, path: '/admin/castracao' },
+        { name: 'Consultas', icon: Stethoscope, path: '/admin/consultas' },
+        { name: 'Denúncias', icon: AlertTriangle, path: '/admin/denuncias' },
+        { name: 'Feiras', icon: CalendarDays, path: '/admin/feiras' },
+        { name: 'Adoções', icon: HeartHandshake, path: '/admin/adocoes' },
+        { name: 'Relatórios', icon: FileText, path: '/admin/relatorios' },
+        ...(isAdmin ? [{ name: 'Usuários', icon: Users, path: '/admin/usuarios' }] : []),
+      ];
 
   const roleLabels: Record<string, string> = {
     'super_admin': 'Super Admin',
     'admin_prefeitura': 'Admin Município',
     'admin_ong': 'Membro ONG',
-    'veterinario': 'Veterinário',
+    'veterinario': 'Clínica Credenciada',
     'cidadao': 'Cidadão',
   };
 
@@ -75,7 +83,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {/* Organization Info */}
         <div className="p-4 border-b border-gray-200">
           <div className="font-semibold text-gray-900 truncate">
-            {organization?.nome || 'Sistema PetConecta BR'}
+            {isClinica ? (profile?.nome ? 'Clínica: ' + profile.nome : 'Clínica Credenciada') : (organization?.nome || 'Sistema PetConecta BR')}
           </div>
           <div className="mt-2 flex gap-2">
             <Badge variant="primary" className="text-xs">

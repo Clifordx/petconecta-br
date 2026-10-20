@@ -35,6 +35,7 @@ export interface Perfil {
   municipio_id?: string;
   tipo_perfil: 'cidadao' | 'admin_prefeitura' | 'admin_ong' | 'veterinario' | 'super_admin';
   organizacao_id?: string;
+  clinica_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +59,7 @@ export interface Pet {
   status: 'DISPONIVEL' | 'ADOTADO' | 'EM_TRATAMENTO' | 'PERDIDO' | 'OBITO';
   tutor_id?: string;
   organizacao_id?: string;
+  clinica_id?: string;
   municipio_id: string;
   data_resgate?: string;
   created_at: string;
@@ -170,7 +172,8 @@ export interface Adocao {
   id: string;
   pet_id: string;
   adotante_id: string;
-  organizacao_id?: string; // if mediated by ONG/Prefeitura
+  organizacao_id?: string;
+  clinica_id?: string; // if mediated by ONG/Prefeitura
   feira_id?: string; // if happened at a fair
   status: 'EM_ANALISE' | 'APROVADA' | 'REJEITADA' | 'CONCLUIDA' | 'DEVOLVIDO';
   data_adocao?: string;

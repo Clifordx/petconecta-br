@@ -1,4 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  fetchClinicasParceiras, 
+  isUsuarioClinica, 
+  getClinicaIdDoUsuario, 
+  ClinicaParceira 
+} from '@/lib/clinicas';
 import { 
   Building2, 
   Search, 
@@ -41,6 +49,13 @@ import CarteiraVacinacaoModal from '@/components/pets/CarteiraVacinacaoModal';
 import { openWhatsApp1Click, dispararWhatsApp, buildAltaMedicaMessage } from '@/lib/whatsapp';
 
 export default function AtendimentoClinico() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paramClinicaId = searchParams.get('clinicaId');
+  const { profile } = useAuth();
+
+  const isClinica = isUsuarioClinica(profile);
+  const isAdmin = !profile || profile.tipo_perfil === 'admin_prefeitura' || profile.tipo_perfil === 'super_admin';
+
   const [activeTab, setActiveTab] = useState<'checkin' | 'em_atendimento' | 'faturamento'>('checkin');
   const [clinicas, setClinicas] = useState<any[]>([]);
   const [selectedClinicaId, setSelectedClinicaId] = useState<string>('');
@@ -139,15 +154,20 @@ export default function AtendimentoClinico() {
   const fetchClinicas = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('clinicas_parceiras')
-        .select('*')
-        .order('nome');
+      const lista = await fetchClinicasParceiras();
+      setClinicas(lista || []);
 
-      if (error) throw error;
-      setClinicas(data || []);
-      if (data && data.length > 0 && !selectedClinicaId) {
-        setSelectedClinicaId(data[0].id);
+      if (isClinica) {
+        // Se for perfil de clínica/veterinário, TRAVA na clínica dele
+        const meuClinicaId = getClinicaIdDoUsuario(profile, lista) || lista[0]?.id;
+        setSelectedClinicaId(meuClinicaId || '');
+      } else {
+        // Se for o Admin Geral do sistema
+        if (paramClinicaId && lista.some(c => c.id === paramClinicaId)) {
+          setSelectedClinicaId(paramClinicaId);
+        } else if (!selectedClinicaId) {
+          setSelectedClinicaId('todas'); // Por padrão o Admin vê todas as clínicas consolidadas
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar clínicas:', error);
@@ -162,8 +182,8 @@ export default function AtendimentoClinico() {
     try {
       setLoading(true);
 
-      // 1. Castrações da clínica
-      const { data: castracoes, error: errCastracoes } = await supabase
+      // 1. Castrações
+      let queryCastracoes = supabase
         .from('filas_castracao')
         .select(`
           *,
@@ -171,13 +191,17 @@ export default function AtendimentoClinico() {
           perfis:tutor_id (nome, telefone, cpf, endereco, cidade),
           clinicas_parceiras:clinica_id (id, nome, endereco, telefone, crmv, veterinario_responsavel, cnpj)
         `)
-        .eq('clinica_id', selectedClinicaId)
         .order('data_agendada', { ascending: true });
 
+      if (selectedClinicaId !== 'todas') {
+        queryCastracoes = queryCastracoes.eq('clinica_id', selectedClinicaId);
+      }
+
+      const { data: castracoes, error: errCastracoes } = await queryCastracoes;
       if (errCastracoes) throw errCastracoes;
 
-      // 2. Consultas da clínica
-      const { data: consultas, error: errConsultas } = await supabase
+      // 2. Consultas
+      let queryConsultas = supabase
         .from('consultas')
         .select(`
           *,
@@ -185,9 +209,13 @@ export default function AtendimentoClinico() {
           perfis:tutor_id (nome, telefone, cpf, endereco, cidade),
           clinicas_parceiras:clinica_id (id, nome, endereco, telefone, crmv, veterinario_responsavel, cnpj)
         `)
-        .eq('clinica_id', selectedClinicaId)
         .order('data_consulta', { ascending: true });
 
+      if (selectedClinicaId !== 'todas') {
+        queryConsultas = queryConsultas.eq('clinica_id', selectedClinicaId);
+      }
+
+      const { data: consultas, error: errConsultas } = await queryConsultas;
       if (errConsultas) throw errConsultas;
 
       const normCastracoes = (castracoes || []).map(c => ({
@@ -528,25 +556,52 @@ export default function AtendimentoClinico() {
           </p>
         </div>
 
-        {/* SELETOR DE CLÍNICA */}
+        {/* SELETOR / IDENTIFICADOR DE CLÍNICA */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-          <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl px-3 py-2 flex items-center gap-3">
-            <Building2 className="w-5 h-5 text-emerald-700 shrink-0" />
-            <div>
-              <span className="text-[10px] uppercase font-bold text-emerald-800 block">Clínica Ativa</span>
-              <select
-                value={selectedClinicaId}
-                onChange={(e) => setSelectedClinicaId(e.target.value)}
-                className="bg-transparent font-extrabold text-slate-900 text-sm focus:outline-hidden cursor-pointer"
-              >
-                {clinicas.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nome} {c.crmv ? `(CRMV ${c.crmv})` : ''}
-                  </option>
-                ))}
-              </select>
+          {isClinica ? (
+            /* VISÃO DA CLÍNICA (LOCKED - APENAS A SUA PRÓPRIA UNIDADE) */
+            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl px-4 py-2.5 flex items-center gap-3 shadow-xs">
+              <div className="p-2 bg-emerald-600 text-white rounded-xl flex-shrink-0">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-sm">
+                    Sua Unidade Credenciada
+                  </span>
+                  <span className="text-[11px] font-bold text-emerald-700">Acesso Restrito</span>
+                </div>
+                <h3 className="text-sm font-black text-slate-900 mt-0.5">
+                  {selectedClinica?.nome || 'Minha Clínica'}
+                </h3>
+                <span className="text-[11px] text-slate-500">
+                  {selectedClinica?.veterinario_responsavel ? `Resp: ${selectedClinica.veterinario_responsavel}` : ''} {selectedClinica?.crmv ? `• ${selectedClinica.crmv}` : ''}
+                </span>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* VISÃO DO ADMINISTRADOR GERAL (SUPER ADMIN / ADMIN PREFEITURA) */
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl px-4 py-2 flex items-center gap-3">
+              <Building2 className="w-5 h-5 text-emerald-700 shrink-0" />
+              <div>
+                <span className="text-[10px] uppercase font-bold text-emerald-800 block">
+                  Filtrar por Clínica (Visão do Administrador Geral)
+                </span>
+                <select
+                  value={selectedClinicaId}
+                  onChange={(e) => setSelectedClinicaId(e.target.value)}
+                  className="bg-transparent font-extrabold text-slate-900 text-sm focus:outline-hidden cursor-pointer"
+                >
+                  <option value="todas">🌟 Todas as Clínicas (Visão Geral da Prefeitura)</option>
+                  {clinicas.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      🏥 {c.nome} {c.crmv ? `(${c.crmv})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           <Button
             variant="outline"

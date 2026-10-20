@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { fetchClinicasParceiras, isUsuarioClinica, getClinicaIdDoUsuario } from '@/lib/clinicas';
 import { 
   Search, 
   Calendar, 
@@ -52,8 +53,8 @@ export default function GestaoConsultas() {
 
   const fetchClinicas = async () => {
     try {
-      const { data } = await supabase.from('clinicas_parceiras').select('id, nome, telefone, endereco');
-      setClinicas(data || []);
+      const lista = await fetchClinicasParceiras();
+      setClinicas(lista);
     } catch (e) {
       console.error(e);
     }
