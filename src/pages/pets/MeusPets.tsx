@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { getMockPetsForUser } from '@/lib/mockPets';
 
 type Pet = {
   id: string;
@@ -48,7 +49,7 @@ type ActiveConsulta = {
 };
 
 const MeusPets = () => {
-  const { user } = useAuth();
+  const { user, isDemoUser } = useAuth();
   const [pets, setPets] = useState<Pet[]>([]);
   const [activeCastracao, setActiveCastracao] = useState<ActiveCastracao | null>(null);
   const [activeConsulta, setActiveConsulta] = useState<ActiveConsulta | null>(null);
@@ -62,14 +63,27 @@ const MeusPets = () => {
         setIsLoading(true);
 
         // 1. Busca os pets do tutor
-        const { data: petsData, error: petErr } = await supabase
-          .from('pets')
-          .select('*, fotos_pet(url)')
-          .eq('tutor_id', user.id)
-          .order('criado_em', { referencedTable: 'fotos_pet', ascending: false });
+        let petsList: any[] = [];
+        try {
+          const { data: petsData, error: petErr } = await supabase
+            .from('pets')
+            .select('*, fotos_pet(url)')
+            .eq('tutor_id', user.id)
+            .order('criado_em', { referencedTable: 'fotos_pet', ascending: false });
 
-        if (petErr) throw petErr;
-        setPets(petsData || []);
+          if (!petErr && petsData && petsData.length > 0) {
+            petsList = petsData;
+          }
+        } catch (e) {
+          console.warn('Erro ao carregar do Supabase:', e);
+        }
+
+        // Se estiver vazio e for Dona Maria ou modo demonstração, carrega os 9 animais oficiais
+        if (petsList.length === 0 && (user.id === 'demo-maria-id' || isDemoUser)) {
+          petsList = getMockPetsForUser(user.id);
+        }
+
+        setPets(petsList);
 
         // 2. Busca se há castrações ativas (pendente ou agendada)
         const { data: todasFilas } = await supabase
@@ -98,6 +112,15 @@ const MeusPets = () => {
             posicao,
             pets: Array.isArray(item.pets) ? item.pets[0] : item.pets
           });
+        } else if (user.id === 'demo-maria-id' || isDemoUser) {
+          // Pipoca na fila de castração para a Dona Maria
+          setActiveCastracao({
+            id: 'fila-demo-001',
+            pet_id: 'pet-maria-005',
+            status: 'pendente',
+            posicao: 3,
+            pets: { nome: 'Pipoca', especie: 'cao' }
+          });
         }
 
         // 3. Busca se há consultas ativas (agendada ou em_andamento)
@@ -115,6 +138,17 @@ const MeusPets = () => {
             ...c,
             pets: Array.isArray(c.pets) ? c.pets[0] : c.pets,
             clinicas_parceiras: Array.isArray(c.clinicas_parceiras) ? c.clinicas_parceiras[0] : c.clinicas_parceiras
+          });
+        } else if (user.id === 'demo-maria-id' || isDemoUser) {
+          // Bob agendado na PetVida para a Dona Maria
+          setActiveConsulta({
+            id: 'cons-demo-001',
+            pet_id: 'pet-maria-004',
+            status: 'agendada',
+            data_consulta: '2026-11-03T14:30:00Z',
+            motivo: 'Revisão geral e vacinação anual (V10 e Antirrábica)',
+            pets: { nome: 'Bob', especie: 'cao' },
+            clinicas_parceiras: { nome: 'Clínica Veterinária PetVida Arapongas' }
           });
         }
 
@@ -398,13 +432,18 @@ const MeusPets = () => {
                 to={`/app/meus-pets/${pet.id}`} 
                 className="bg-white rounded-2xl shadow-xs border border-gray-200 overflow-hidden hover:shadow-md hover:border-emerald-300 transition-all group flex flex-col"
               >
-                <div className="h-48 bg-slate-50 relative flex items-center justify-center overflow-hidden border-b border-gray-100">
+                <div className="h-48 bg-slate-100 relative flex items-center justify-center overflow-hidden border-b border-gray-100">
                   {pet.fotos_pet && pet.fotos_pet.length > 0 ? (
-                    <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300" />
+                    <img src={pet.fotos_pet[0].url} alt={pet.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (pet as any).foto_url ? (
+                    <img src={(pet as any).foto_url} alt={pet.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     pet.especie === 'gato' ? <Cat className="w-16 h-16 text-gray-300" /> : <Dog className="w-16 h-16 text-gray-300" />
                   )}
-                  <div className="absolute inset-0 bg-black/5 group-hover:bg-black/0 transition-colors"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
+                  <span className="absolute bottom-2 left-3 text-white font-black text-sm drop-shadow-md">
+                    {pet.nome}
+                  </span>
                 </div>
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>

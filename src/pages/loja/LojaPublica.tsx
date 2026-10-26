@@ -39,6 +39,8 @@ import {
   salvarCarrinhoLocal 
 } from '@/lib/loja';
 import { Button } from '@/components/ui/Button';
+import PreviaPlaquinha3D from '@/components/loja/PreviaPlaquinha3D';
+import { getMockPetsForUser } from '@/lib/mockPets';
 
 export default function LojaPublica() {
   const { user, profile } = useAuth();
@@ -58,6 +60,8 @@ export default function LojaPublica() {
   const [produtoModal, setProdutoModal] = useState<ProdutoLoja | null>(null);
   const [personalizacaoTemp, setPersonalizacaoTemp] = useState<Record<string, string>>({});
   const [qtdTemp, setQtdTemp] = useState(1);
+  const [abaPreviaModal, setAbaPreviaModal] = useState<'3d' | 'foto'>('3d');
+  const meusPets = getMockPetsForUser(user?.id);
 
   // Modal de Checkout / Finalização
   const [checkoutAberto, setCheckoutAberto] = useState(false);
@@ -498,7 +502,7 @@ export default function LojaPublica() {
       {/* MODAL DE DETALHES & PERSONALIZAÇÃO DO PRODUTO */}
       {produtoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative space-y-6 max-h-[90vh] overflow-y-auto">
             
             {/* Fechar */}
             <button
@@ -508,14 +512,49 @@ export default function LojaPublica() {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex flex-col sm:flex-row gap-6">
-              {/* Imagem */}
-              <div className="w-full sm:w-1/2 aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                <img
-                  src={produtoModal.fotos[0] || 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=800'}
-                  alt={produtoModal.nome}
-                  className="w-full h-full object-cover"
-                />
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Imagem ou Prévia 3D ao Vivo */}
+              <div className="w-full lg:w-1/2 flex flex-col gap-2">
+                {produtoModal.permite_personalizacao && (
+                  <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold self-start mb-1">
+                    <button
+                      type="button"
+                      onClick={() => setAbaPreviaModal('3d')}
+                      className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                        abaPreviaModal === '3d' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Sparkles size={13} /> Prévia 3D ao Vivo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAbaPreviaModal('foto')}
+                      className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        abaPreviaModal === 'foto' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Foto Real
+                    </button>
+                  </div>
+                )}
+
+                {produtoModal.permite_personalizacao && abaPreviaModal === '3d' ? (
+                  <PreviaPlaquinha3D
+                    nomePet={personalizacaoTemp['Nome do Pet'] || ''}
+                    telefone={personalizacaoTemp['Telefone com DDD para Gravação'] || ''}
+                    cor={personalizacaoTemp['Cor da Plaquinha 3D'] || 'Azul Royal'}
+                    formato={personalizacaoTemp['Formato da Plaquinha'] || 'Ossinho Clássico'}
+                    categoria={produtoModal.categoria}
+                  />
+                ) : (
+                  <div className="w-full aspect-square rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+                    <img
+                      src={produtoModal.fotos[0] || 'https://images.unsplash.com/photo-1548767797-d8c844163c4c?auto=format&fit=crop&q=80&w=800'}
+                      alt={produtoModal.nome}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Informações Principais */}
@@ -574,6 +613,37 @@ export default function LojaPublica() {
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   Personalize seu Produto Sob Medida:
                 </h4>
+
+                {/* ATALHO RÁPIDO: PREENCHER COM ANIMAIS CADASTRADOS */}
+                {meusPets.length > 0 && (
+                  <div className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl space-y-1.5">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-900">
+                      <Dog size={13} className="text-emerald-700" />
+                      <span>Preencher com os dados do seu pet cadastrado:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {meusPets.map((pet) => (
+                        <button
+                          key={pet.id}
+                          type="button"
+                          onClick={() => {
+                            setPersonalizacaoTemp({
+                              ...personalizacaoTemp,
+                              'Nome do Pet': pet.nome,
+                              'Telefone com DDD para Gravação': profile?.telefone || '(43) 99876-1234'
+                            });
+                            setAbaPreviaModal('3d');
+                            toast.success(`Plaquinha atualizada com o pet ${pet.nome}!`);
+                          }}
+                          className="px-2.5 py-1 bg-white hover:bg-emerald-600 hover:text-white border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 transition-all shadow-xs cursor-pointer flex items-center gap-1 active:scale-95"
+                        >
+                          <span>{pet.nome}</span>
+                          <span className="text-[10px] opacity-70">({pet.especie === 'gato' ? '🐱' : '🐶'})</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {produtoModal.campos_personalizacao.map((campo, idx) => (

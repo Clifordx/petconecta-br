@@ -4,6 +4,7 @@ import { ArrowLeft, Edit, Stethoscope, Scissors, Calendar, Activity, Info, FileT
 import CartazSOSModal from '@/components/sos/CartazSOSModal';
 import NovoAlertaSOSModal from '@/components/sos/NovoAlertaSOSModal';
 import { AnimalSOS, fetchAnimaisSOS, salvarAnimalSOS, marcarResolvidoSOS } from '@/lib/sos';
+import { getMockPetById } from '@/lib/mockPets';
 import { supabase } from '@/lib/supabase';
 import { removeBackground } from '@imgly/background-removal';
 import { useAuth } from '@/contexts/AuthContext';
