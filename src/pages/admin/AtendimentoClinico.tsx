@@ -67,6 +67,7 @@ export default function AtendimentoClinico() {
   const [atendidosMes, setAtendidosMes] = useState<any[]>([]);
 
   // Filtros e busca
+  const clinicaAtual = clinicas.find(c => c.id === selectedClinicaId);
   const [searchQuery, setSearchQuery] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'castracao' | 'consulta'>('todos');
   const [mesFaturamento, setMesFaturamento] = useState<string>(() => {
@@ -965,6 +966,28 @@ export default function AtendimentoClinico() {
               <p className="text-xs text-emerald-100">Repasse Municipal Prefeitura</p>
             </div>
           </div>
+          {/* CABEÇALHO OFICIAL DE IMPRESSÃO A4 (Aparece ao imprimir o Boletim) */}
+          <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-lg font-black text-slate-900 uppercase tracking-wide">
+                  Prefeitura Municipal de Arapongas - Estado do Paraná
+                </h1>
+                <p className="text-xs text-slate-600 font-bold">
+                  Secretaria Municipal de Meio Ambiente e Bem-Estar Animal
+                </p>
+                <p className="text-xs text-slate-800 font-extrabold mt-1">
+                  Boletim Oficial de Produção Ambulatorial & Faturamento do Convênio Clínico
+                </p>
+              </div>
+              <div className="text-right text-xs">
+                <p className="font-bold text-slate-900">{clinicaAtual?.nome || 'Clínica Credenciada'}</p>
+                <p className="text-slate-600">{clinicaAtual?.cnpj ? `CNPJ: ${clinicaAtual.cnpj}` : ''}</p>
+                <p className="text-slate-700 font-bold mt-1">Competência: {mesFaturamento}</p>
+              </div>
+            </div>
+          </div>
+
 
           {/* TABELA DE PRESTAÇÃO DE CONTAS / BOLETIM */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -1042,6 +1065,20 @@ export default function AtendimentoClinico() {
               </div>
             )}
           </div>
+          {/* ASSINATURAS DO BOLETIM OFICIAL (Aparece na Impressão A4) */}
+          <div className="hidden print:flex pt-12 mt-8 justify-between items-center text-center text-xs text-slate-700">
+            <div>
+              <div className="border-b border-slate-900 w-64 mb-1"></div>
+              <p className="font-bold">{clinicaAtual?.veterinario_responsavel || 'Responsável Técnico da Clínica'}</p>
+              <p className="text-[11px] text-slate-500">{clinicaAtual?.crmv || 'CRMV-PR'}</p>
+            </div>
+            <div>
+              <div className="border-b border-slate-900 w-64 mb-1"></div>
+              <p className="font-bold">Fiscal do Convênio Municipal</p>
+              <p className="text-[11px] text-slate-500">Secretaria de Meio Ambiente / Prefeitura de Arapongas</p>
+            </div>
+          </div>
+
         </div>
       )}
 
