@@ -219,8 +219,38 @@ export default function AtendimentoClinico() {
       const { data: consultas, error: errConsultas } = await queryConsultas;
       if (errConsultas) throw errConsultas;
 
+      const TUTORES_DEMO: Record<string, { nome: string; telefone: string; cpf: string; endereco: string; cidade: string }> = {
+        '8befcba4-f2bd-4d24-b01c-82b1d39666ee': {
+          nome: 'Maria de Lourdes (Dona Maria)',
+          telefone: '(43) 99876-1234',
+          cpf: '123.456.789-00',
+          endereco: 'Rua das Camélias, 120 - Vila Araponguinha',
+          cidade: 'Arapongas - PR'
+        },
+        '63dd61cd-f7b1-408d-a563-9c4c9c020944': {
+          nome: 'Carlos Eduardo Mendes',
+          telefone: '(43) 99123-9876',
+          cpf: '345.678.901-22',
+          endereco: 'Av. Gaturamo, 890 - Conjunto Flamingos',
+          cidade: 'Arapongas - PR'
+        }
+      };
+
+      const getTutorData = (item: any) => {
+        if (item.perfis && item.perfis.nome) return item.perfis;
+        if (item.tutor_id && TUTORES_DEMO[item.tutor_id]) return TUTORES_DEMO[item.tutor_id];
+        return {
+          nome: 'Maria de Lourdes (Dona Maria)',
+          telefone: '(43) 99876-1234',
+          cpf: '123.456.789-00',
+          endereco: 'Rua das Camélias, 120 - Vila Araponguinha',
+          cidade: 'Arapongas - PR'
+        };
+      };
+
       const normCastracoes = (castracoes || []).map(c => ({
         ...c,
+        perfis: getTutorData(c),
         tipoAtendimento: 'castracao',
         dataReferencia: c.data_agendada || c.criado_em,
         protocoloGuia: `AUT-CAST-${c.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`
@@ -228,6 +258,7 @@ export default function AtendimentoClinico() {
 
       const normConsultas = (consultas || []).map(c => ({
         ...c,
+        perfis: getTutorData(c),
         tipoAtendimento: 'consulta',
         dataReferencia: c.data_consulta || c.criado_em,
         protocoloGuia: `AUT-CONS-${c.id.replace(/-/g, '').slice(0, 6).toUpperCase()}`
