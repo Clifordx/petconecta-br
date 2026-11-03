@@ -32,7 +32,7 @@ import {
   CategoriaProduto, 
   ItemCarrinho, 
   PedidoLoja, 
-  fetchProdutosLoja, 
+  fetchProdutosLoja, DADOS_PIX_LOJA, 
   criarPedidoLoja, 
   gerarMensagemWhatsAppPedido, 
   getCarrinhoLocal, 
@@ -1016,10 +1016,10 @@ export default function LojaPublica() {
                       🔑 Pagamento via Chave PIX:
                     </span>
                     <div className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-300 font-mono font-bold text-slate-800">
-                      <span className="flex-1 truncate">pix@petconecta.com.br</span>
+                      <span className="flex-1 truncate">{DADOS_PIX_LOJA.chave}</span>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText('pix@petconecta.com.br');
+                          navigator.clipboard.writeText(DADOS_PIX_LOJA.chave);
                           toast.success('Chave PIX copiada para a área de transferência!');
                         }}
                         className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-sans font-bold flex items-center gap-1"
@@ -1027,8 +1027,13 @@ export default function LojaPublica() {
                         <Copy className="w-3.5 h-3.5" /> Copiar
                       </button>
                     </div>
-                    <p className="text-[11px] text-slate-500 text-center">
-                      Valor exato: <strong>R$ {pedidoConcluido.valor_total.toFixed(2)}</strong>. Envie o comprovante no WhatsApp da produção.
+                                        <div className="bg-emerald-50/60 p-2 rounded-lg border border-emerald-100 text-[11px] text-emerald-950 space-y-0.5">
+                      <p><strong>Favorecido:</strong> {DADOS_PIX_LOJA.titular}</p>
+                      <p><strong>Banco:</strong> {DADOS_PIX_LOJA.banco} • {DADOS_PIX_LOJA.cidade}</p>
+                      <p><strong>Valor:</strong> R$ {pedidoConcluido.valor_total.toFixed(2)}</p>
+                    </div>
+                    <p className="text-[10px] text-slate-500 text-center">
+                      Após a transferência, envie o comprovante no WhatsApp para iniciar a confecção.
                     </p>
                   </div>
                 )}

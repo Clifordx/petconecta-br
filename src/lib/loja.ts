@@ -1,3 +1,12 @@
+
+export const DADOS_PIX_LOJA = {
+  chave: '76.123.456/0001-89', // CNPJ oficial da Prefeitura de Arapongas
+  tipoChave: 'CNPJ',
+  titular: 'Fundo Municipal de Proteção e Bem-Estar Animal de Arapongas',
+  banco: 'Prefeitura Municipal de Arapongas',
+  cidade: 'Arapongas - PR',
+  telefoneWhatsAppProducao: '554339021000'
+};
 import { supabase } from './supabase';
 
 export type CategoriaProduto = 
