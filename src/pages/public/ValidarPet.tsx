@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/Button';
 import CarteirinhaDigital from '@/components/pets/CarteirinhaDigital';
 import CarteiraVacinacaoModal from '@/components/pets/CarteiraVacinacaoModal';
 import { toast } from 'sonner';
+import { getMockPetById } from '@/lib/mockPets';
 
 export default function ValidarPet() {
   const { id } = useParams<{ id: string }>();
@@ -41,25 +42,47 @@ export default function ValidarPet() {
   const carregarPet = async (petId: string) => {
     try {
       setLoading(true);
-      // Busca dados do pet
-      const { data: petData, error: petError } = await supabase
-        .from('pets')
-        .select('*, fotos_pet(url)')
-        .eq('id', petId)
-        .single();
+      let petData: any = null;
 
-      if (petError) throw petError;
-      setPet(petData);
-
-      // Se tiver tutor_id, tenta buscar os dados de contato do perfil
-      if (petData?.tutor_id) {
-        const { data: tutorData } = await supabase
-          .from('perfis')
-          .select('nome, telefone, cidade, estado')
-          .eq('id', petData.tutor_id)
+      try {
+        const { data, error: petError } = await supabase
+          .from('pets')
+          .select('*, fotos_pet(url)')
+          .eq('id', petId)
           .single();
 
-        if (tutorData) setTutor(tutorData);
+        if (!petError && data) {
+          petData = data;
+        }
+      } catch (e) {
+        console.warn('Erro ao consultar Supabase:', e);
+      }
+
+      // Se não encontrou no Supabase, procura no mock oficial (pets da Dona Maria ou resgates)
+      if (!petData) {
+        petData = getMockPetById(petId);
+      }
+
+      if (!petData) {
+        setPet(null);
+        return;
+      }
+
+      setPet(petData);
+
+      // Se tiver tutor_id, busca os dados de contato do perfil
+      if (petData.tutor_id === 'demo-maria-id') {
+        setTutor({ nome: 'Maria de Lourdes (Protetora)', telefone: '(43) 99876-1234', cidade: 'Arapongas', estado: 'PR' });
+      } else if (petData?.tutor_id) {
+        try {
+          const { data: tutorData } = await supabase
+            .from('perfis')
+            .select('nome, telefone, cidade, estado')
+            .eq('id', petData.tutor_id)
+            .single();
+
+          if (tutorData) setTutor(tutorData);
+        } catch (e) {}
       }
     } catch (error) {
       console.error('Erro ao validar pet:', error);
