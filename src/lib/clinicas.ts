@@ -24,7 +24,7 @@ const STORAGE_CLINICAS = 'petconecta_clinicas_parceiras';
 
 export const CLINICAS_PADRAO: ClinicaParceira[] = [
   {
-    id: 'clinica-001',
+    id: 'a0000000-0000-0000-0000-000000000001',
     nome: 'Hospital Veterinário Municipal de Arapongas',
     endereco: 'Rua das Pombas, 450 - Centro, Arapongas - PR',
     telefone: '(43) 3902-1000',
@@ -41,7 +41,7 @@ export const CLINICAS_PADRAO: ClinicaParceira[] = [
     criado_em: '2026-01-10T10:00:00Z'
   },
   {
-    id: 'clinica-002',
+    id: 'a0000000-0000-0000-0000-000000000002',
     nome: 'Clínica Veterinária PetVida Arapongas',
     endereco: 'Av. Arapongas, 1280 - Vila Araponguinha, Arapongas - PR',
     telefone: '(43) 99876-5432',
@@ -58,7 +58,7 @@ export const CLINICAS_PADRAO: ClinicaParceira[] = [
     criado_em: '2026-02-15T11:00:00Z'
   },
   {
-    id: 'clinica-003',
+    id: 'a0000000-0000-0000-0000-000000000003',
     nome: 'Centro Veterinário São Francisco',
     endereco: 'Rua Falcão, 310 - Jardim Primavera, Arapongas - PR',
     telefone: '(43) 99111-2233',
@@ -124,9 +124,14 @@ export async function salvarClinicaParceira(clinica: Partial<ClinicaParceira>): 
       lista.push(clinicaFinal);
     }
   } else {
+    // Gera UUID válido para não violar o tipo UUID no PostgreSQL
+    const novoUuid = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : 'a' + Math.random().toString(16).substring(2, 10) + '-0000-4000-8000-' + Math.random().toString(16).substring(2, 14);
+
     clinicaFinal = {
       ...clinica,
-      id: 'clinica-' + Date.now(),
+      id: novoUuid,
       ativa: true,
       criado_em: new Date().toISOString()
     } as ClinicaParceira;

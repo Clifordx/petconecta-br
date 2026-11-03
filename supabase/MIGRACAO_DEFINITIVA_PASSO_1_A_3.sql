@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- 🚀 PETCONECTA BR / ARAPONGAS - PARANÁ
--- SCRIPT CONSOLIDADO DE PRODUÇÃO: PASSOS 1, 2 E 3
--- Execute este script completo no Editor SQL do seu Painel Supabase
+-- SCRIPT CORRIGIDO E DEFINITIVO: PASSOS 1, 2 E 3
+-- Execute este script no Editor SQL do seu Painel Supabase
 -- (Menu lateral esquerdo: SQL Editor -> New Query -> Colar e clicar em RUN)
 -- ==============================================================================
 
@@ -9,10 +9,123 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ==============================================================================
--- PASSO 1: TABELAS DO BANCO DE RAÇÃO MUNICIPAL (+7 ANIMAIS) E LOJINHA 3D
+-- 2. AJUSTAR TABELA DE CLÍNICAS PARCEIRAS (PRE-EXISTENTE NO BANCO DE DADOS)
+-- ==============================================================================
+-- Garante a criação da tabela se não existir
+CREATE TABLE IF NOT EXISTS public.clinicas_parceiras (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nome TEXT NOT NULL,
+  endereco TEXT NOT NULL,
+  telefone VARCHAR(30) NOT NULL,
+  criado_em TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Adiciona as colunas novas caso a tabela já tenha sido criada anteriormente
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS razao_social TEXT;
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS cnpj VARCHAR(30);
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS email VARCHAR(100);
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS veterinario_responsavel TEXT;
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS crmv VARCHAR(30);
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS vagas_castracao_mensal INTEGER DEFAULT 50;
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS vagas_consulta_mensal INTEGER DEFAULT 50;
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS horario_atendimento TEXT DEFAULT 'Segunda a Sexta, 08h às 18h';
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS observacoes TEXT;
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS usuario_id UUID;
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS usuario_email VARCHAR(100);
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS usuario_nome VARCHAR(100);
+ALTER TABLE public.clinicas_parceiras ADD COLUMN IF NOT EXISTS ativa BOOLEAN DEFAULT TRUE;
+
+-- Atualizar registro já existente da CentroVet (se houver)
+UPDATE public.clinicas_parceiras
+SET 
+  ativa = TRUE,
+  vagas_consulta_mensal = COALESCE(vagas_consulta_mensal, 50),
+  horario_atendimento = COALESCE(horario_atendimento, 'Segunda a Sexta, 08h às 18h'),
+  usuario_email = COALESCE(usuario_email, 'vet.centrovet@arapongas.pr.gov.br'),
+  usuario_nome = COALESCE(usuario_nome, 'Dr. CentroVet')
+WHERE id = '5bcb0b4d-e33b-4a96-b2cf-53be5d56b647';
+
+-- Inserir / Atualizar clínicas conveniadas padrão de Arapongas com UUIDs válidos
+INSERT INTO public.clinicas_parceiras (
+  id, nome, endereco, telefone, email, cnpj, veterinario_responsavel, crmv, vagas_castracao_mensal, vagas_consulta_mensal, horario_atendimento, observacoes, usuario_email, usuario_nome, ativa
+) VALUES
+(
+  'a0000000-0000-0000-0000-000000000001',
+  'Hospital Veterinário Municipal de Arapongas',
+  'Rua das Pombas, 450 - Centro, Arapongas - PR',
+  '(43) 3902-1000',
+  'hospital.vet@arapongas.pr.gov.br',
+  '76.123.456/0001-89',
+  'Dra. Fernanda Albuquerque',
+  'CRMV-PR 14.820',
+  120,
+  100,
+  'Segunda a Sexta, 08h às 17h',
+  'Hospital central de referência para procedimentos cirúrgicos e castrações em massa.',
+  'hospital.vet@arapongas.pr.gov.br',
+  'Dra. Fernanda (Hospital Vet)',
+  TRUE
+),
+(
+  'a0000000-0000-0000-0000-000000000002',
+  'Clínica Veterinária PetVida Arapongas',
+  'Av. Arapongas, 1280 - Vila Araponguinha, Arapongas - PR',
+  '(43) 99876-5432',
+  'contato@petvidaarapongas.com.br',
+  '12.345.678/0001-90',
+  'Dr. Roberto Mendes',
+  'CRMV-PR 18.932',
+  50,
+  50,
+  'Segunda a Sábado, 08h às 18h',
+  'Clínica conveniada para castração de cães e gatos de protetores e baixa renda.',
+  'vet.petvida@arapongas.pr.gov.br',
+  'Dr. Roberto (PetVida)',
+  TRUE
+),
+(
+  'a0000000-0000-0000-0000-000000000003',
+  'Centro Veterinário São Francisco',
+  'Rua Falcão, 310 - Jardim Primavera, Arapongas - PR',
+  '(43) 99111-2233',
+  'clinica.saofrancisco@gmail.com',
+  '98.765.432/0001-11',
+  'Dra. Juliana Castro',
+  'CRMV-PR 12.345',
+  40,
+  40,
+  'Segunda a Sexta, 08h30 às 17h30',
+  'Especializada no atendimento de felinos e cães de pequeno porte.',
+  'vet.saofrancisco@arapongas.pr.gov.br',
+  'Dra. Juliana (São Francisco)',
+  TRUE
+)
+ON CONFLICT (id) DO UPDATE SET
+  nome = EXCLUDED.nome,
+  telefone = EXCLUDED.telefone,
+  veterinario_responsavel = EXCLUDED.veterinario_responsavel,
+  crmv = EXCLUDED.crmv,
+  usuario_email = EXCLUDED.usuario_email,
+  usuario_nome = EXCLUDED.usuario_nome,
+  ativa = EXCLUDED.ativa;
+
+-- ==============================================================================
+-- 3. GARANTIR COLUNAS EM PERFIS, FILAS E CONSULTAS
+-- ==============================================================================
+ALTER TABLE public.perfis ADD COLUMN IF NOT EXISTS email VARCHAR(100);
+ALTER TABLE public.perfis ADD COLUMN IF NOT EXISTS crmv VARCHAR(30);
+ALTER TABLE public.perfis ADD COLUMN IF NOT EXISTS clinica_id UUID REFERENCES public.clinicas_parceiras(id) ON DELETE SET NULL;
+ALTER TABLE public.perfis ADD COLUMN IF NOT EXISTS nis_cadunico VARCHAR(20);
+ALTER TABLE public.perfis ADD COLUMN IF NOT EXISTS cidade VARCHAR(100) DEFAULT 'Arapongas - PR';
+
+ALTER TABLE public.filas_castracao ADD COLUMN IF NOT EXISTS clinica_id UUID REFERENCES public.clinicas_parceiras(id) ON DELETE SET NULL;
+ALTER TABLE public.consultas ADD COLUMN IF NOT EXISTS clinica_id UUID REFERENCES public.clinicas_parceiras(id) ON DELETE SET NULL;
+
+-- ==============================================================================
+-- 4. PASSO 1: TABELAS DO BANCO DE RAÇÃO MUNICIPAL (+7 ANIMAIS) E LOJINHA 3D
 -- ==============================================================================
 
--- 1.1 Tabela de Solicitações do Banco de Ração Municipal
+-- 4.1 Tabela de Solicitações do Banco de Ração Municipal
 CREATE TABLE IF NOT EXISTS public.solicitacoes_banco_racao (
   id TEXT PRIMARY KEY,
   user_id UUID,
@@ -44,7 +157,7 @@ ALTER TABLE public.solicitacoes_banco_racao
 ALTER TABLE public.solicitacoes_banco_racao 
   ADD CONSTRAINT check_mais_de_sete_animais CHECK (qtd_caes + qtd_gatos > 7);
 
--- 1.2 Tabela de Entregas e Recibos do Banco de Ração
+-- 4.2 Tabela de Entregas e Recibos do Banco de Ração
 CREATE TABLE IF NOT EXISTS public.entregas_banco_racao (
   id TEXT PRIMARY KEY,
   protocolo VARCHAR(50) NOT NULL,
@@ -52,7 +165,7 @@ CREATE TABLE IF NOT EXISTS public.entregas_banco_racao (
   beneficiario_nome TEXT NOT NULL,
   beneficiario_cpf VARCHAR(18) NOT NULL,
   beneficiario_bairro VARCHAR(100),
-  mes_referencia VARCHAR(10) NOT NULL, -- Ex: '2026-11'
+  mes_referencia VARCHAR(10) NOT NULL,
   data_entrega DATE NOT NULL DEFAULT CURRENT_DATE,
   quantidade_kg INTEGER NOT NULL,
   tipo_racao VARCHAR(50) DEFAULT 'Cão Adulto (Nutrição Balanceada)',
@@ -62,7 +175,7 @@ CREATE TABLE IF NOT EXISTS public.entregas_banco_racao (
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.3 Tabela de Estoque de Ração em Armazém
+-- 4.3 Tabela de Estoque de Ração em Armazém
 CREATE TABLE IF NOT EXISTS public.estoque_racao (
   id TEXT PRIMARY KEY,
   especie VARCHAR(20) NOT NULL,
@@ -83,7 +196,7 @@ VALUES
   ('est-004', 'gato', 'filhote', 300, 'Kitten Baby Felinos', 'doacao_empresa')
 ON CONFLICT (id) DO UPDATE SET quantidade_kg = EXCLUDED.quantidade_kg;
 
--- 1.4 Tabela de Produtos da Lojinha Pet & Impressão 3D
+-- 4.4 Tabela de Produtos da Lojinha Pet & Impressão 3D
 CREATE TABLE IF NOT EXISTS public.loja_produtos (
   id TEXT PRIMARY KEY,
   nome TEXT NOT NULL,
@@ -178,7 +291,7 @@ VALUES
 )
 ON CONFLICT (id) DO UPDATE SET preco = EXCLUDED.preco, estoque = EXCLUDED.estoque;
 
--- 1.5 Tabela de Pedidos da Lojinha
+-- 4.5 Tabela de Pedidos da Lojinha
 CREATE TABLE IF NOT EXISTS public.loja_pedidos (
   id TEXT PRIMARY KEY,
   numero_pedido VARCHAR(30) UNIQUE NOT NULL,
@@ -198,96 +311,11 @@ CREATE TABLE IF NOT EXISTS public.loja_pedidos (
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 1.6 Garantir Colunas e Relacionamentos das Clínicas Parceiras
-CREATE TABLE IF NOT EXISTS public.clinicas_parceiras (
-  id TEXT PRIMARY KEY,
-  nome TEXT NOT NULL,
-  razao_social TEXT,
-  cnpj VARCHAR(30),
-  endereco TEXT NOT NULL,
-  telefone VARCHAR(30) NOT NULL,
-  email VARCHAR(100),
-  veterinario_responsavel TEXT,
-  crmv VARCHAR(30),
-  vagas_castracao_mensal INTEGER DEFAULT 50,
-  vagas_consulta_mensal INTEGER DEFAULT 50,
-  horario_atendimento TEXT DEFAULT 'Segunda a Sexta, 08h às 18h',
-  observacoes TEXT,
-  usuario_id UUID,
-  usuario_email VARCHAR(100),
-  usuario_nome VARCHAR(100),
-  ativa BOOLEAN DEFAULT TRUE,
-  criado_em TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Seed das Clínicas Conveniadas de Arapongas
-INSERT INTO public.clinicas_parceiras (
-  id, nome, endereco, telefone, email, cnpj, veterinario_responsavel, crmv, vagas_castracao_mensal, horario_atendimento, observacoes, usuario_email, usuario_nome, ativa
-) VALUES
-(
-  'clinica-001',
-  'Hospital Veterinário Municipal de Arapongas',
-  'Rua das Pombas, 450 - Centro, Arapongas - PR',
-  '(43) 3902-1000',
-  'hospital.vet@arapongas.pr.gov.br',
-  '76.123.456/0001-89',
-  'Dra. Fernanda Albuquerque',
-  'CRMV-PR 14.820',
-  120,
-  'Segunda a Sexta, 08h às 17h',
-  'Hospital central de referência para procedimentos cirúrgicos e castrações em massa.',
-  'hospital.vet@arapongas.pr.gov.br',
-  'Dra. Fernanda (Hospital Vet)',
-  TRUE
-),
-(
-  'clinica-002',
-  'Clínica Veterinária PetVida Arapongas',
-  'Av. Arapongas, 1280 - Vila Araponguinha, Arapongas - PR',
-  '(43) 99876-5432',
-  'contato@petvidaarapongas.com.br',
-  '12.345.678/0001-90',
-  'Dr. Roberto Mendes',
-  'CRMV-PR 18.932',
-  50,
-  'Segunda a Sábado, 08h às 18h',
-  'Clínica conveniada para castração de cães e gatos de protetores e baixa renda.',
-  'vet.petvida@arapongas.pr.gov.br',
-  'Dr. Roberto (PetVida)',
-  TRUE
-),
-(
-  'clinica-003',
-  'Centro Veterinário São Francisco',
-  'Rua Falcão, 310 - Jardim Primavera, Arapongas - PR',
-  '(43) 99111-2233',
-  'clinica.saofrancisco@gmail.com',
-  '98.765.432/0001-11',
-  'Dra. Juliana Castro',
-  'CRMV-PR 12.345',
-  40,
-  'Segunda a Sexta, 08h30 às 17h30',
-  'Especializada no atendimento de felinos e cães de pequeno porte.',
-  'vet.saofrancisco@arapongas.pr.gov.br',
-  'Dra. Juliana (São Francisco)',
-  TRUE
-)
-ON CONFLICT (id) DO UPDATE SET
-  nome = EXCLUDED.nome,
-  telefone = EXCLUDED.telefone,
-  veterinario_responsavel = EXCLUDED.veterinario_responsavel,
-  crmv = EXCLUDED.crmv;
-
--- Adicionar colunas de clínicas nas tabelas existentes com segurança
-ALTER TABLE public.perfis ADD COLUMN IF NOT EXISTS clinica_id TEXT REFERENCES public.clinicas_parceiras(id) ON DELETE SET NULL;
-ALTER TABLE public.filas_castracao ADD COLUMN IF NOT EXISTS clinica_id TEXT REFERENCES public.clinicas_parceiras(id) ON DELETE SET NULL;
-ALTER TABLE public.consultas ADD COLUMN IF NOT EXISTS clinica_id TEXT REFERENCES public.clinicas_parceiras(id) ON DELETE SET NULL;
-
 -- ==============================================================================
--- PASSO 2: BUCKETS DE STORAGE (FOTOS, DOCUMENTOS E DENÚNCIAS)
+-- 5. PASSO 2: BUCKETS DE STORAGE (FOTOS, DOCUMENTOS E DENÚNCIAS)
 -- ==============================================================================
 
--- 2.1 Criação dos Buckets Públicos no Supabase
+-- 5.1 Criação dos Buckets Públicos no Supabase
 INSERT INTO storage.buckets (id, name, public)
 VALUES 
   ('pets', 'pets', true),
@@ -295,7 +323,7 @@ VALUES
   ('denuncias', 'denuncias', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
--- 2.2 Políticas de Leitura e Upload para os Buckets
+-- 5.2 Políticas de Leitura e Upload para os Buckets
 DROP POLICY IF EXISTS "Public Access Pets" ON storage.objects;
 CREATE POLICY "Public Access Pets" ON storage.objects FOR SELECT USING (bucket_id = 'pets');
 DROP POLICY IF EXISTS "Public Upload Pets" ON storage.objects;
@@ -314,7 +342,7 @@ DROP POLICY IF EXISTS "Public Upload Denuncias" ON storage.objects;
 CREATE POLICY "Public Upload Denuncias" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'denuncias');
 
 -- ==============================================================================
--- HABILITAR RLS COM ACESSO COMPLETO NAS NOVAS TABELAS
+-- 6. HABILITAR ROW LEVEL SECURITY (RLS) COM ACESSO COMPLETO NAS TABELAS
 -- ==============================================================================
 ALTER TABLE public.solicitacoes_banco_racao ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.entregas_banco_racao ENABLE ROW LEVEL SECURITY;

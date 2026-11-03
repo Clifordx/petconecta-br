@@ -56,7 +56,7 @@ const DEMO_ACCOUNTS: Record<DemoUserType, { user: User; profile: Perfil }> = {
       cpf: '111.222.333-44',
       telefone: '(43) 99876-5432',
       tipo_perfil: 'veterinario',
-      clinica_id: 'clinica-002',
+      clinica_id: 'a0000000-0000-0000-0000-000000000002',
       endereco: 'Av. Arapongas, 1280',
       bairro: 'Vila Araponguinha',
       cep: '86701-000',
