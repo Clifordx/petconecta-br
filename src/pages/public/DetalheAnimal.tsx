@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { getMockAdocaoById } from '@/lib/mockPets';
 
 export default function DetalheAnimal() {
   const { id } = useParams();
@@ -26,8 +27,8 @@ export default function DetalheAnimal() {
   const [loading, setLoading] = useState(true);
   const [modalInteresseOpen, setModalInteresseOpen] = useState(false);
 
-  // Número padrão de WhatsApp da equipe de adoção (se houver clínica ou org configurada, pode puxar)
-  const [whatsappEquipe, setWhatsappEquipe] = useState('43999999999');
+  // Número padrão de WhatsApp da equipe de adoção (Prefeitura / Canil de Arapongas)
+  const [whatsappEquipe, setWhatsappEquipe] = useState('4339021000');
 
   useEffect(() => {
     if (id) {
@@ -39,14 +40,34 @@ export default function DetalheAnimal() {
   const fetchAnimalDetails = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*, fotos_pet(url, is_principal)')
-        .eq('id', id)
-        .single();
+      let petData: any = null;
 
-      if (error) throw error;
-      setAnimal(data);
+      try {
+        const { data, error } = await supabase
+          .from('pets')
+          .select('*, fotos_pet(url, is_principal)')
+          .eq('id', id)
+          .single();
+
+        if (!error && data) {
+          petData = data;
+        }
+      } catch (e) {
+        console.warn('Erro ao consultar Supabase:', e);
+      }
+
+      // Se não encontrou no Supabase, procura no mock de adoção oficial
+      if (!petData && id) {
+        petData = getMockAdocaoById(id);
+      }
+
+      if (!petData) {
+        toast.error('Animal não encontrado.');
+        navigate('/animais');
+        return;
+      }
+
+      setAnimal(petData);
     } catch (error) {
       console.error('Erro ao buscar detalhes do animal:', error);
       toast.error('Animal não encontrado.');
@@ -58,7 +79,6 @@ export default function DetalheAnimal() {
 
   const buscarContatoEquipe = async () => {
     try {
-      // Pega o telefone da primeira clínica ou organização se existir
       const { data: clinicas } = await supabase.from('clinicas_parceiras').select('telefone').limit(1);
       if (clinicas && clinicas.length > 0 && clinicas[0].telefone) {
         setWhatsappEquipe(clinicas[0].telefone.replace(/\D/g, ''));
@@ -68,7 +88,8 @@ export default function DetalheAnimal() {
     }
   };
 
-  const getPrincipalPhoto = (fotos: any[]) => {
+  const getPrincipalPhoto = (fotos: any[], fallbackUrl?: string) => {
+    if (fallbackUrl) return fallbackUrl;
     if (!fotos || fotos.length === 0) return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800';
     const principal = fotos.find(f => f.is_principal);
     return principal ? principal.url : fotos[0].url;
@@ -98,7 +119,7 @@ export default function DetalheAnimal() {
       {/* Botão Voltar */}
       <button 
         onClick={() => navigate('/animais')} 
-        className="flex items-center text-sm font-semibold text-gray-600 hover:text-emerald-700 mb-6 transition-colors gap-1.5"
+        className="flex items-center text-sm font-semibold text-gray-600 hover:text-emerald-700 mb-6 transition-colors gap-1.5 cursor-pointer"
       >
         <ArrowLeft size={18} /> Voltar para lista de animais
       </button>
@@ -108,11 +129,11 @@ export default function DetalheAnimal() {
           
           {/* Foto Principal com Logo Oficial */}
           <div className="w-full md:w-1/2 bg-gray-50 flex items-center justify-center p-4 border-b md:border-b-0 md:border-r">
-            <div className="w-full max-h-[520px] rounded-2xl overflow-hidden flex items-center justify-center">
+            <div className="w-full max-h-[520px] rounded-2xl overflow-hidden flex items-center justify-center bg-slate-100">
               <img 
-                src={getPrincipalPhoto(animal.fotos_pet)} 
+                src={getPrincipalPhoto(animal.fotos_pet, animal.foto_url)} 
                 alt={animal.nome} 
-                className="max-h-[500px] w-auto object-contain rounded-xl"
+                className="max-h-[500px] w-full object-cover rounded-xl"
               />
             </div>
           </div>
@@ -146,7 +167,7 @@ export default function DetalheAnimal() {
                         toast.success('Link copiado para a área de transferência!');
                       }
                     }}
-                    className="p-3 bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-full transition-colors"
+                    className="p-3 bg-gray-100 hover:bg-emerald-50 hover:text-emerald-700 rounded-full transition-colors cursor-pointer"
                     title="Compartilhar"
                   >
                     <Share2 size={20} />
@@ -195,7 +216,7 @@ export default function DetalheAnimal() {
                   <ShieldCheck size={16} className="text-emerald-600" /> Adoção com Termo Oficial de Guarda Responsável
                 </p>
                 <p>• Obrigatório ser maior de 18 anos</p>
-                <p>• Necessário apresentar documento de identidade e comprovante de endereço</p>
+                <p>• Necessário apresentar documento de identidade e comprovante de endereço em Arapongas</p>
               </div>
             </div>
 
@@ -203,14 +224,14 @@ export default function DetalheAnimal() {
             <div className="space-y-3 pt-4 border-t">
               <Button 
                 onClick={() => setModalInteresseOpen(true)}
-                className="w-full h-14 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                className="w-full h-14 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Heart size={20} fill="currentColor" /> Quero Adotar {animal.sexo === 'femea' ? 'a' : 'o'} {animal.nome}
               </Button>
 
               <button
                 onClick={handleAbrirWhatsApp}
-                className="w-full py-2.5 text-xs text-emerald-700 font-bold hover:underline flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 text-xs text-emerald-700 font-bold hover:underline flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <MessageCircle size={15} /> Falar com a equipe no WhatsApp sobre {animal.nome}
               </button>
@@ -228,12 +249,12 @@ export default function DetalheAnimal() {
         <div className="space-y-5 text-center sm:text-left">
           <div className="flex flex-col sm:flex-row items-center gap-4 bg-emerald-50 p-4 rounded-2xl border border-emerald-200">
             <img 
-              src={getPrincipalPhoto(animal.fotos_pet)} 
+              src={getPrincipalPhoto(animal.fotos_pet, animal.foto_url)} 
               alt={animal.nome} 
               className="w-16 h-16 rounded-xl object-cover border"
             />
             <div>
-              <h3 className="font-bold text-gray-900 text-lg">Você escolheu {animal.nome}! ❤️</h3>
+              <h3 className="font-bold text-gray-900 text-lg">Você escolheu {animal.nome}! 🐾</h3>
               <p className="text-xs text-gray-600">
                 Para adotar, você pode falar direto com nossos voluntários pelo WhatsApp ou participar de uma das nossas feiras presenciais.
               </p>
@@ -249,28 +270,29 @@ export default function DetalheAnimal() {
               </p>
               <p className="flex items-start gap-2">
                 <Check size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" />
-                <span><strong>Termo Digital:</strong> Você assina o Termo de Posse Responsável direto no celular/tablet.</span>
+                <span><strong>Termo de Adoção:</strong> Assinatura digital ou presencial garantindo posse responsável.</span>
               </p>
               <p className="flex items-start gap-2">
                 <Check size={16} className="text-emerald-600 mt-0.5 flex-shrink-0" />
-                <span><strong>Novo lar:</strong> O pet já vai para a sua casa vacinado e castrado!</span>
+                <span><strong>Entrega ou retirada:</strong> Você busca seu novo amigo no canil/abrigo ou em feiras municipais.</span>
               </p>
             </div>
           </div>
 
-          <div className="space-y-2 pt-2">
-            <Button 
+          <div className="pt-2 flex flex-col sm:flex-row gap-2">
+            <Button
               onClick={handleAbrirWhatsApp}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold h-12 rounded-xl flex items-center justify-center gap-2 shadow-md shadow-green-600/20"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center gap-2 py-3 rounded-xl cursor-pointer"
             >
-              <MessageCircle size={18} /> Conversar no WhatsApp Agora
+              <MessageCircle size={18} /> Confirmar Interesse no WhatsApp
             </Button>
-
-            <Link to="/feiras" onClick={() => setModalInteresseOpen(false)}>
-              <Button variant="outline" className="w-full h-11 rounded-xl text-xs flex items-center justify-center gap-1.5 mt-2">
-                <Calendar size={15} /> Ver Próximas Feiras de Adoção
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              onClick={() => setModalInteresseOpen(false)}
+              className="w-full py-3 rounded-xl cursor-pointer"
+            >
+              Fechar
+            </Button>
           </div>
         </div>
       </Modal>

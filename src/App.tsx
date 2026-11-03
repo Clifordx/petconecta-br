@@ -98,6 +98,9 @@ function AppRoutes() {
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/animais" element={<AnimaisAdocao />} />
         <Route path="/animais/:id" element={<DetalheAnimal />} />
+        <Route path="/adocao" element={<AnimaisAdocao />} />
+        <Route path="/adocao/:id" element={<DetalheAnimal />} />
+        <Route path="/cadastro-parceiro" element={<Cadastro />} />
         <Route path="/feiras" element={<FeirasPublicas />} />
         <Route path="/denuncia" element={<NovaDenuncia />} />
         <Route path="/acompanhar-denuncia" element={<AcompanharDenuncia />} />

@@ -257,3 +257,147 @@ export function savePetLocal(pet: PetModel) {
     console.warn('Erro ao salvar pet localmente:', e);
   }
 }
+
+export const PETS_ADOCAO_MOCK = [
+  {
+    id: 'adocao-001',
+    nome: 'Pipoca',
+    especie: 'cao',
+    raca: 'Vira-lata Caramelo (SRD)',
+    porte: 'medio',
+    sexo: 'macho',
+    cor: 'Caramelo',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.111.222',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 1 ano e meio. Super dócil, brincalhão e sociável com outros cães. Resgatado no Jardim Primavera.',
+    criado_em: '2026-09-10T10:00:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  },
+  {
+    id: 'adocao-002',
+    nome: 'Luna',
+    especie: 'gato',
+    raca: 'Siamês Mix',
+    porte: 'pequeno',
+    sexo: 'femea',
+    cor: 'Branco e Cinza',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.333.444',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 1 ano. Gata calma, carinhosa, adaptada a apartamento e acostumada com caixa de areia.',
+    criado_em: '2026-09-12T11:00:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  },
+  {
+    id: 'adocao-003',
+    nome: 'Barão',
+    especie: 'cao',
+    raca: 'Pastor Alemão Mix',
+    porte: 'grande',
+    sexo: 'macho',
+    cor: 'Preto e Dourado',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.555.666',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 3 anos. Excelente cão de guarda e companheiro de caminhada. Muito obediente e leal.',
+    criado_em: '2026-09-15T09:30:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  },
+  {
+    id: 'adocao-004',
+    nome: 'Mia',
+    especie: 'gato',
+    raca: 'Frajolinha (SRD)',
+    porte: 'pequeno',
+    sexo: 'femea',
+    cor: 'Preto e Branco',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.777.888',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 8 meses. Muito boazinha, adora carinho na barriga e ronronar no colo.',
+    criado_em: '2026-09-18T14:00:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  },
+  {
+    id: 'adocao-005',
+    nome: 'Toby',
+    especie: 'cao',
+    raca: 'Fox Paulistinha Mix',
+    porte: 'pequeno',
+    sexo: 'macho',
+    cor: 'Tricolor',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.999.000',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 2 anos. Porte pequeno, ideal para casas com quintal pequeno ou apartamentos.',
+    criado_em: '2026-09-20T16:00:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  },
+  {
+    id: 'adocao-006',
+    nome: 'Chiquinha',
+    especie: 'cao',
+    raca: 'Labrador Mix',
+    porte: 'grande',
+    sexo: 'femea',
+    cor: 'Dourada',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.123.456',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 2 anos. Uma doçura de cachorra, se dá muito bem com crianças e outros animais.',
+    criado_em: '2026-09-22T10:00:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  },
+  {
+    id: 'adocao-007',
+    nome: 'Simba',
+    especie: 'gato',
+    raca: 'Laranja Rajado',
+    porte: 'medio',
+    sexo: 'macho',
+    cor: 'Laranja e Branco',
+    castrado: true,
+    vacinado: true,
+    microchip: '981.000.789.012',
+    status: 'para_adocao',
+    observacoes: 'Idade aproximada: 1 ano e meio. Castrado, vacinado e vermifugado. Companheiro e dócil.',
+    criado_em: '2026-09-25T13:00:00Z',
+    foto_url: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=800',
+    fotos_pet: [
+      { url: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=800', is_principal: true }
+    ]
+  }
+];
+
+export function getMockAdocaoPets(): any[] {
+  return PETS_ADOCAO_MOCK;
+}
+
+export function getMockAdocaoById(id: string): any | undefined {
+  return PETS_ADOCAO_MOCK.find(p => p.id === id);
+}

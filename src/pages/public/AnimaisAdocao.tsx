@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, Filter, Sparkles } from 'lucide-react';
+import { Search, Heart, Filter, Sparkles, Dog, Cat } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { Pet } from '@/types';
+import { getMockAdocaoPets } from '@/lib/mockPets';
 
 export default function AnimaisAdocao() {
   const navigate = useNavigate();
@@ -19,16 +19,35 @@ export default function AnimaisAdocao() {
   const fetchAnimais = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('pets')
-        .select('*, fotos_pet(url, is_principal)')
-        .eq('status', 'para_adocao')
-        .order('criado_em', { ascending: false });
+      let lista: any[] = [];
+      try {
+        const { data, error } = await supabase
+          .from('pets')
+          .select('*, fotos_pet(url, is_principal)')
+          .eq('status', 'para_adocao')
+          .order('criado_em', { ascending: false });
 
-      if (error) throw error;
-      setAnimais(data || []);
+        if (!error && data && data.length > 0) {
+          lista = data;
+        }
+      } catch (err) {
+        console.warn('Erro ao buscar do Supabase:', err);
+      }
+
+      // Complementa com a lista de animais de adoção do mock oficial de Arapongas
+      const mockList = getMockAdocaoPets();
+      if (lista.length === 0) {
+        lista = mockList;
+      } else {
+        const idsNoBanco = new Set(lista.map(p => p.id));
+        const extras = mockList.filter(m => !idsNoBanco.has(m.id));
+        lista = [...lista, ...extras];
+      }
+
+      setAnimais(lista);
     } catch (error) {
       console.error('Erro ao buscar animais:', error);
+      setAnimais(getMockAdocaoPets());
     } finally {
       setLoading(false);
     }
@@ -46,7 +65,8 @@ export default function AnimaisAdocao() {
     return true;
   });
 
-  const getPrincipalPhoto = (fotos: any[]) => {
+  const getPrincipalPhoto = (fotos: any[], fallbackUrl?: string) => {
+    if (fallbackUrl) return fallbackUrl;
     if (!fotos || fotos.length === 0) return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400';
     const principal = fotos.find(f => f.is_principal);
     return principal ? principal.url : fotos[0].url;
@@ -80,16 +100,16 @@ export default function AnimaisAdocao() {
           <Button 
             variant={filter === 'CACHORRO' ? 'primary' : 'outline'} 
             onClick={() => setFilter('CACHORRO')}
-            className="text-xs sm:text-sm font-semibold rounded-xl"
+            className="text-xs sm:text-sm font-semibold rounded-xl flex items-center gap-1.5"
           >
-            Cães
+            <Dog size={16} /> Cães
           </Button>
           <Button 
             variant={filter === 'GATO' ? 'primary' : 'outline'} 
             onClick={() => setFilter('GATO')}
-            className="text-xs sm:text-sm font-semibold rounded-xl"
+            className="text-xs sm:text-sm font-semibold rounded-xl flex items-center gap-1.5"
           >
-            Gatos
+            <Cat size={16} /> Gatos
           </Button>
         </div>
         
@@ -129,9 +149,9 @@ export default function AnimaisAdocao() {
               <div>
                 <div className="relative aspect-square overflow-hidden bg-gray-50">
                   <img 
-                    src={getPrincipalPhoto(animal.fotos_pet)} 
+                    src={getPrincipalPhoto(animal.fotos_pet, animal.foto_url)} 
                     alt={animal.nome} 
-                    className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                   />
                   <div className="absolute top-3 left-3">
                     <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 bg-emerald-600 text-white rounded-full shadow-sm">
@@ -151,7 +171,7 @@ export default function AnimaisAdocao() {
                   </div>
 
                   <p className="text-xs text-gray-500 mb-2">
-                    {animal.raca || 'Sem raça definida'} • {animal.sexo === 'femea' ? 'Fêmea' : 'Macho'} • Porte {animal.porte || 'Médio'}
+                    {animal.raca || 'Sem raça definida'} • {animal.sexo === 'femea' ? 'Fêmea' : 'Macho'} • Porte {animal.porte ? animal.porte.charAt(0).toUpperCase() + animal.porte.slice(1) : 'Médio'}
                   </p>
 
                   <div className="flex flex-wrap gap-1.5 mb-3">
