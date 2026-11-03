@@ -198,10 +198,26 @@ export function calcularCotaSugerida(qtdCaes: number, qtdGatos: number): number 
  */
 export async function fetchBeneficiarios(): Promise<BeneficiarioRacao[]> {
   try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('solicitacoes_banco_racao')
+        .select('*')
+        .order('criado_em', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        localStorage.setItem(STORAGE_BENEFICIARIOS, JSON.stringify(data));
+        return data as BeneficiarioRacao[];
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao ler beneficiários do Supabase:', e);
+  }
+
+  try {
     const salvo = localStorage.getItem(STORAGE_BENEFICIARIOS);
     if (salvo) return JSON.parse(salvo);
   } catch (e) {
-    console.error('Erro ao ler beneficiários:', e);
+    console.error('Erro ao ler beneficiários do localStorage:', e);
   }
   localStorage.setItem(STORAGE_BENEFICIARIOS, JSON.stringify(DADOS_EXEMPLO_BENEFICIARIOS));
   return DADOS_EXEMPLO_BENEFICIARIOS;
@@ -246,6 +262,15 @@ export async function salvarBeneficiario(dados: Partial<BeneficiarioRacao>): Pro
   }
 
   localStorage.setItem(STORAGE_BENEFICIARIOS, JSON.stringify(lista));
+
+  try {
+    if (supabase) {
+      await supabase.from('solicitacoes_banco_racao').upsert(novo);
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar beneficiário no Supabase:', e);
+  }
+
   return novo;
 }
 
@@ -266,6 +291,17 @@ export async function atualizarStatusBeneficiario(
     if (motivo !== undefined) item.motivo_rejeicao = motivo;
     localStorage.setItem(STORAGE_BENEFICIARIOS, JSON.stringify(lista));
   }
+
+  try {
+    if (supabase) {
+      const updateData: any = { status };
+      if (cotaKg !== undefined) updateData.cota_mensal_kg = cotaKg;
+      if (motivo !== undefined) updateData.motivo_rejeicao = motivo;
+      await supabase.from('solicitacoes_banco_racao').update(updateData).eq('id', id);
+    }
+  } catch (e) {
+    console.warn('Erro ao atualizar status do beneficiário no Supabase:', e);
+  }
 }
 
 /**
@@ -273,10 +309,26 @@ export async function atualizarStatusBeneficiario(
  */
 export async function fetchEstoqueRacao(): Promise<EstoqueRacao[]> {
   try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('estoque_racao')
+        .select('*')
+        .order('especie');
+
+      if (!error && data && data.length > 0) {
+        localStorage.setItem(STORAGE_ESTOQUE, JSON.stringify(data));
+        return data as EstoqueRacao[];
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao ler estoque do Supabase:', e);
+  }
+
+  try {
     const salvo = localStorage.getItem(STORAGE_ESTOQUE);
     if (salvo) return JSON.parse(salvo);
   } catch (e) {
-    console.error('Erro ao ler estoque:', e);
+    console.error('Erro ao ler estoque do localStorage:', e);
   }
   localStorage.setItem(STORAGE_ESTOQUE, JSON.stringify(DADOS_EXEMPLO_ESTOQUE));
   return DADOS_EXEMPLO_ESTOQUE;
@@ -293,6 +345,15 @@ export async function adicionarEntradaEstoque(entrada: Omit<EstoqueRacao, 'id'>)
   };
   estoque.unshift(novo);
   localStorage.setItem(STORAGE_ESTOQUE, JSON.stringify(estoque));
+
+  try {
+    if (supabase) {
+      await supabase.from('estoque_racao').upsert(novo);
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar estoque no Supabase:', e);
+  }
+
   return novo;
 }
 
@@ -300,6 +361,22 @@ export async function adicionarEntradaEstoque(entrada: Omit<EstoqueRacao, 'id'>)
  * Busca o histórico de entregas de ração
  */
 export async function fetchEntregasRacao(mesReferencia?: string): Promise<EntregaRacao[]> {
+  try {
+    if (supabase) {
+      let query = supabase.from('entregas_banco_racao').select('*').order('data_entrega', { ascending: false });
+      if (mesReferencia) {
+        query = query.eq('mes_referencia', mesReferencia);
+      }
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        localStorage.setItem(STORAGE_ENTREGAS, JSON.stringify(data));
+        return data as EntregaRacao[];
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao ler entregas do Supabase:', e);
+  }
+
   let entregas: EntregaRacao[] = [];
   try {
     const salvo = localStorage.getItem(STORAGE_ENTREGAS);
@@ -376,6 +453,14 @@ export async function registrarEntregaRacao(dados: {
   entregas.unshift(novaEntrega);
   localStorage.setItem(STORAGE_ENTREGAS, JSON.stringify(entregas));
 
+  try {
+    if (supabase) {
+      await supabase.from('entregas_banco_racao').insert(novaEntrega);
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar entrega no Supabase:', e);
+  }
+
   // 3. Abate proporcionalmente do estoque
   try {
     const estoque = await fetchEstoqueRacao();
@@ -386,6 +471,12 @@ export async function registrarEntregaRacao(dados: {
     if (itemEstoque) {
       itemEstoque.quantidade_kg = Math.max(0, itemEstoque.quantidade_kg - quantidade_kg);
       localStorage.setItem(STORAGE_ESTOQUE, JSON.stringify(estoque));
+
+      if (supabase) {
+        await supabase.from('estoque_racao').update({
+          quantidade_kg: itemEstoque.quantidade_kg
+        }).eq('id', itemEstoque.id);
+      }
     }
   } catch (e) {
     console.warn('Erro ao abater do estoque:', e);

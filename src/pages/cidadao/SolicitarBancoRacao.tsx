@@ -133,13 +133,29 @@ export default function SolicitarBancoRacao() {
     }
   };
 
-  const handleFileUpload = (
+  const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (url: string) => void,
     nomeDoc: string
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Tenta upload real no Supabase Storage
+    try {
+      const bucket = nomeDoc.toLowerCase().includes('animais') ? 'pets' : 'documentos';
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `racao/${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
+      const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+      if (!error && data) {
+        const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
+        setter(urlData.publicUrl);
+        toast.success(`${nomeDoc} enviado para a nuvem com sucesso!`);
+        return;
+      }
+    } catch (err) {
+      console.warn('Erro ao subir para o Supabase storage, usando fallback local:', err);
+    }
 
     const reader = new FileReader();
     reader.onloadend = () => {

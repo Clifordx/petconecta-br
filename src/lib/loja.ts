@@ -396,6 +396,22 @@ export const PEDIDOS_PADRAO: PedidoLoja[] = [
 // OPERAÇÕES DE PRODUTOS
 export async function fetchProdutosLoja(): Promise<ProdutoLoja[]> {
   try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('loja_produtos')
+        .select('*')
+        .order('criado_em', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        localStorage.setItem(STORAGE_PRODUTOS, JSON.stringify(data));
+        return data as ProdutoLoja[];
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao ler produtos do Supabase, usando localStorage:', e);
+  }
+
+  try {
     const local = localStorage.getItem(STORAGE_PRODUTOS);
     if (local) {
       const parsed = JSON.parse(local);
@@ -445,13 +461,30 @@ export async function salvarProdutoLoja(produto: Partial<ProdutoLoja>): Promise<
 
   localStorage.setItem(STORAGE_PRODUTOS, JSON.stringify(produtos));
 
-  // Tenta sincronizar com Supabase se a tabela existir
+  // Sincroniza com Supabase tabela loja_produtos
   try {
     if (supabase) {
-      await supabase.from('produtos_loja').upsert(produtoFinal);
+      await supabase.from('loja_produtos').upsert({
+        id: produtoFinal.id,
+        nome: produtoFinal.nome,
+        slug: produtoFinal.slug,
+        descricao: produtoFinal.descricao,
+        preco: produtoFinal.preco,
+        preco_promocional: produtoFinal.preco_promocional,
+        categoria: produtoFinal.categoria,
+        fotos: produtoFinal.fotos || [],
+        estoque: produtoFinal.estoque,
+        tipo_producao: produtoFinal.tipo_producao,
+        tempo_producao_dias: produtoFinal.tempo_producao_dias,
+        permite_personalizacao: produtoFinal.permite_personalizacao,
+        destaque: produtoFinal.destaque,
+        ativo: produtoFinal.ativo,
+        reverte_ong: produtoFinal.reverte_ong,
+        criado_em: produtoFinal.criado_em
+      });
     }
   } catch (e) {
-    // Silencia se a tabela opcional não estiver no Supabase
+    console.warn('Erro ao sincronizar produto no Supabase:', e);
   }
 
   return produtoFinal;
@@ -464,13 +497,29 @@ export async function excluirProdutoLoja(id: string): Promise<void> {
 
   try {
     if (supabase) {
-      await supabase.from('produtos_loja').delete().eq('id', id);
+      await supabase.from('loja_produtos').delete().eq('id', id);
     }
   } catch (e) {}
 }
 
 // OPERAÇÕES DE PEDIDOS
 export async function fetchPedidosLoja(): Promise<PedidoLoja[]> {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('loja_pedidos')
+        .select('*')
+        .order('criado_em', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(data));
+        return data as PedidoLoja[];
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao buscar pedidos no Supabase:', e);
+  }
+
   try {
     const local = localStorage.getItem(STORAGE_PEDIDOS);
     if (local) {
@@ -497,6 +546,31 @@ export async function criarPedidoLoja(dados: Omit<PedidoLoja, 'id' | 'numero_ped
   pedidos.unshift(novoPedido);
   localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
 
+  try {
+    if (supabase) {
+      await supabase.from('loja_pedidos').insert({
+        id: novoPedido.id,
+        numero_pedido: novoPedido.numero_pedido,
+        cliente_nome: novoPedido.cliente_nome,
+        cliente_telefone: novoPedido.cliente_telefone,
+        cliente_cpf: novoPedido.cliente_cpf,
+        cliente_endereco: novoPedido.cliente_endereco,
+        cliente_bairro: novoPedido.cliente_bairro,
+        cliente_cidade: novoPedido.cliente_cidade,
+        itens: novoPedido.itens,
+        valor_subtotal: novoPedido.valor_subtotal,
+        taxa_entrega: novoPedido.taxa_entrega,
+        valor_total: novoPedido.valor_total,
+        metodo_pagamento: novoPedido.metodo_pagamento,
+        status: novoPedido.status,
+        observacoes: novoPedido.observacoes,
+        criado_em: novoPedido.criado_em
+      });
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar pedido no Supabase:', e);
+  }
+
   // Limpa carrinho local
   localStorage.removeItem(STORAGE_CARRINHO);
 
@@ -509,6 +583,14 @@ export async function atualizarStatusPedido(id: string, status: PedidoLoja['stat
   if (index >= 0) {
     pedidos[index].status = status;
     localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
+  }
+
+  try {
+    if (supabase) {
+      await supabase.from('loja_pedidos').update({ status }).eq('id', id);
+    }
+  } catch (e) {
+    console.warn('Erro ao atualizar status do pedido no Supabase:', e);
   }
 }
 
