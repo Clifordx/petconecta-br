@@ -32,7 +32,9 @@ import {
   fetchBeneficiarios, 
   fetchEntregasRacao, 
   salvarBeneficiario, 
-  calcularCotaSugerida 
+  calcularCotaSugerida,
+  calcularCotaDetalhada,
+  calcularSacosSugeridos
 } from '@/lib/bancoRacao';
 import { Button } from '@/components/ui/Button';
 import ReciboEntregaRacaoModal from '@/components/racao/ReciboEntregaRacaoModal';
@@ -165,7 +167,9 @@ export default function SolicitarBancoRacao() {
     reader.readAsDataURL(file);
   };
 
-  const cotaSugerida = calcularCotaSugerida(qtdCaes, qtdGatos);
+  const totalAnimaisCalculado = (Number(qtdCaes) || 0) + (Number(qtdGatos) || 0);
+  const cotaInfo = calcularCotaDetalhada(totalAnimaisCalculado);
+  const cotaSugerida = cotaInfo.kg;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,8 +187,8 @@ export default function SolicitarBancoRacao() {
       return;
     }
     const totalAnimais = qtdCaes + qtdGatos;
-    if (totalAnimais <= 7) {
-      toast.error('Regra do Programa: É obrigatório possuir mais de 7 animais sob tutela (mínimo de 8 animais) para se inscrever no Banco de Ração Municipal.');
+    if (totalAnimais < 5) {
+      toast.error('Regra do Programa: É obrigatório possuir a partir de 5 animais sob tutela para se inscrever no Banco de Ração Municipal.');
       return;
     }
     if (!termoAceito) {
@@ -243,7 +247,7 @@ export default function SolicitarBancoRacao() {
           Banco de Ração Municipal Solidário
         </h1>
         <p className="text-sm sm:text-base text-white/90 max-w-2xl">
-          Destinado a tutores de baixa renda cadastrados no <strong>CadÚnico</strong> e <strong>Protetores Independentes</strong> com <strong>mais de 7 animais</strong> sob tutela em Arapongas.
+          Destinado a tutores de baixa renda cadastrados no <strong>CadÚnico</strong> e <strong>Protetores Independentes</strong> com <strong>a partir de 5 animais</strong> sob tutela em Arapongas (fornecimento mensal em sacos de 25kg).
         </p>
       </div>
 
@@ -480,7 +484,7 @@ export default function SolicitarBancoRacao() {
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                <span><strong>Regra de Múltiplos Animais:</strong> Guarda responsável de <strong>mais de 7 animais</strong> (mínimo de 8 cães/gatos sob tutela).</span>
+                <span><strong>Regra de Múltiplos Animais:</strong> Guarda responsável de <strong>a partir de 5 animais</strong> (fornecimento mensal escalonado em sacos de 25kg).</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
@@ -639,29 +643,86 @@ export default function SolicitarBancoRacao() {
             </div>
 
             {/* ETAPA 3: QUANTIDADE DE ANIMAIS E ESPAÇO */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-2 gap-2">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-2">
-                  <Dog className="w-4 h-4 text-emerald-600" /> 3. Animais sob sua Guarda (Regra: + de 7 animais)
+                  <Dog className="w-4 h-4 text-emerald-600" /> 3. Animais sob sua Guarda (Regra Municipal: Mínimo 5 animais)
                 </h3>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                  (qtdCaes + qtdGatos) > 7
+                  totalAnimaisCalculado >= 5
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                     : 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse'
                 }`}>
-                  {(qtdCaes + qtdGatos) > 7 
-                    ? `✅ Total: ${qtdCaes + qtdGatos} animais (Requisito > 7 atendido)`
-                    : `⚠️ Total: ${qtdCaes + qtdGatos} animais (Exige mais de 7)`}
+                  {totalAnimaisCalculado >= 5 
+                    ? `✅ Total: ${totalAnimaisCalculado} animais (Requisito ≥ 5 atendido)`
+                    : `⚠️ Total: ${totalAnimaisCalculado} animais (Exige a partir de 5)`}
                 </span>
               </div>
 
-              {(qtdCaes + qtdGatos) <= 7 && (
+              {/* TABELA VISUAL DAS FAIXAS OFICIAIS DE RAÇÃO EM SACOS DE 25KG */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-slate-800 uppercase flex items-center gap-1.5 text-xs">
+                    <Package className="w-4 h-4 text-emerald-600" />
+                    Regra Oficial: Fornecimento em Sacos de 25kg
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">Decreto Municipal de Segurança Alimentar</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  <div className={`p-3 rounded-xl border transition-all ${totalAnimaisCalculado >= 5 && totalAnimaisCalculado <= 9 ? 'bg-emerald-100/80 border-emerald-500 font-bold text-emerald-950 shadow-xs' : 'bg-white border-slate-200 text-slate-700'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">05 a 09 animais</span>
+                      {totalAnimaisCalculado >= 5 && totalAnimaisCalculado <= 9 && (
+                        <span className="text-[10px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-sm">Sua faixa</span>
+                      )}
+                    </div>
+                    <span className="font-black text-base text-slate-900 block mt-1">1 saco de 25kg</span>
+                    <span className="text-[11px] text-emerald-700 font-bold block">25 KG / mês</span>
+                  </div>
+
+                  <div className={`p-3 rounded-xl border transition-all ${totalAnimaisCalculado >= 10 && totalAnimaisCalculado <= 15 ? 'bg-emerald-100/80 border-emerald-500 font-bold text-emerald-950 shadow-xs' : 'bg-white border-slate-200 text-slate-700'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">10 a 15 animais</span>
+                      {totalAnimaisCalculado >= 10 && totalAnimaisCalculado <= 15 && (
+                        <span className="text-[10px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-sm">Sua faixa</span>
+                      )}
+                    </div>
+                    <span className="font-black text-base text-slate-900 block mt-1">2 sacos de 25kg</span>
+                    <span className="text-[11px] text-emerald-700 font-bold block">50 KG / mês</span>
+                  </div>
+
+                  <div className={`p-3 rounded-xl border transition-all ${totalAnimaisCalculado >= 16 && totalAnimaisCalculado <= 20 ? 'bg-emerald-100/80 border-emerald-500 font-bold text-emerald-950 shadow-xs' : 'bg-white border-slate-200 text-slate-700'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">16 a 20 animais</span>
+                      {totalAnimaisCalculado >= 16 && totalAnimaisCalculado <= 20 && (
+                        <span className="text-[10px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-sm">Sua faixa</span>
+                      )}
+                    </div>
+                    <span className="font-black text-base text-slate-900 block mt-1">3 sacos de 25kg</span>
+                    <span className="text-[11px] text-emerald-700 font-bold block">75 KG / mês</span>
+                  </div>
+
+                  <div className={`p-3 rounded-xl border transition-all ${totalAnimaisCalculado >= 21 ? 'bg-emerald-100/80 border-emerald-500 font-bold text-emerald-950 shadow-xs' : 'bg-white border-slate-200 text-slate-700'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase">A cada +5 animais</span>
+                      {totalAnimaisCalculado >= 21 && (
+                        <span className="text-[10px] bg-emerald-600 text-white font-black px-1.5 py-0.5 rounded-sm">Sua faixa</span>
+                      )}
+                    </div>
+                    <span className="font-black text-base text-slate-900 block mt-1">+1 saco de 25kg</span>
+                    <span className="text-[11px] text-emerald-700 font-bold block">Sucessivamente</span>
+                  </div>
+                </div>
+              </div>
+
+              {totalAnimaisCalculado < 5 && (
                 <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 flex items-start gap-2.5">
                   <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <strong className="block font-black">Regra de Acesso ao Benefício:</strong>
                     <span>
-                      O Banco de Ração Municipal é reservado para famílias com CadÚnico e protetores que tutelam <strong>mais de 7 animais</strong> (mínimo de 8 animais). Com {qtdCaes + qtdGatos} animais informados, a inscrição não poderá ser submetida.
+                      O Banco de Ração Municipal é reservado para famílias com CadÚnico e protetores que tutelam <strong>a partir de 5 animais</strong>. Com {totalAnimaisCalculado} {totalAnimaisCalculado === 1 ? 'animal informado' : 'animais informados'}, a inscrição não poderá ser submetida.
                     </span>
                   </div>
                 </div>
@@ -673,7 +734,7 @@ export default function SolicitarBancoRacao() {
                     <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
                       <Dog className="w-4 h-4 text-amber-600" /> Quantidade de Cães:
                     </label>
-                    <span className="text-[11px] text-slate-500">Média de 7kg/mês por cão</span>
+                    <span className="text-[11px] text-slate-500">Cães sob seus cuidados</span>
                   </div>
                   <input
                     type="number"
@@ -690,7 +751,7 @@ export default function SolicitarBancoRacao() {
                     <label className="block text-xs font-bold text-slate-700 flex items-center gap-1">
                       <Cat className="w-4 h-4 text-blue-600" /> Quantidade de Gatos:
                     </label>
-                    <span className="text-[11px] text-slate-500">Média de 2.5kg/mês por gato</span>
+                    <span className="text-[11px] text-slate-500">Gatos sob seus cuidados</span>
                   </div>
                   <input
                     type="number"
@@ -720,15 +781,24 @@ export default function SolicitarBancoRacao() {
               </div>
 
               {/* CARD DE COTA ESTIMADA */}
-              <div className="bg-emerald-100/70 border border-emerald-300 p-4 rounded-2xl flex items-center justify-between">
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100 border-2 border-emerald-300 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
                 <div>
                   <span className="text-xs font-black uppercase text-emerald-950 block">
-                    Cota Mensal Estimada para Liberação:
+                    Cota Mensal Concedida:
                   </span>
-                  <span className="text-xs text-slate-600">Calculada para o total de {qtdCaes + qtdGatos} animais informados</span>
+                  <span className="text-xs text-slate-700 font-medium">
+                    {totalAnimaisCalculado >= 5 
+                      ? `Enquadramento: ${cotaInfo.faixaDescricao} para ${totalAnimaisCalculado} animais`
+                      : 'Mínimo de 5 animais necessários para liberação.'}
+                  </span>
                 </div>
-                <div className="text-3xl font-black text-emerald-800">
-                  {cotaSugerida} KG <span className="text-sm font-normal">/ mês</span>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-2xl sm:text-3xl font-black text-emerald-800">
+                    {cotaInfo.sacos} {cotaInfo.sacos === 1 ? 'Saco de 25kg' : 'Sacos de 25kg'}
+                  </div>
+                  <span className="text-xs font-extrabold text-emerald-700 block">
+                    Total: {cotaInfo.kg} KG / mês
+                  </span>
                 </div>
               </div>
             </div>

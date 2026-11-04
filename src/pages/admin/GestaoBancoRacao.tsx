@@ -35,6 +35,8 @@ import {
   adicionarEntradaEstoque, 
   registrarEntregaRacao, 
   calcularCotaSugerida,
+  calcularCotaDetalhada,
+  calcularSacosSugeridos,
   verificarRetiradaNoMes
 } from '@/lib/bancoRacao';
 import { Button } from '@/components/ui/Button';
@@ -61,8 +63,8 @@ export default function GestaoBancoRacao() {
   // Modal de Entrega
   const [modalEntregaOpen, setModalEntregaOpen] = useState(false);
   const [beneficiarioIdSelecionado, setBeneficiarioIdSelecionado] = useState('');
-  const [qtdKgEntrega, setQtdKgEntrega] = useState(15);
-  const [tipoRacaoEntrega, setTipoRacaoEntrega] = useState('Ração Canina Adulto (Premium)');
+  const [qtdKgEntrega, setQtdKgEntrega] = useState(25);
+  const [tipoRacaoEntrega, setTipoRacaoEntrega] = useState('1 Saco de 25kg (Ração Canina Adulto)');
   const [responsavelEntrega, setResponsavelEntrega] = useState('Secretaria de Meio Ambiente / Aline Santos');
   const [obsEntrega, setObsEntrega] = useState('');
   const [salvandoEntrega, setSalvandoEntrega] = useState(false);
@@ -126,8 +128,11 @@ export default function GestaoBancoRacao() {
     
     const alvo = beneficiarios.find(b => b.id === alvoId);
     if (alvo) {
-      setQtdKgEntrega(alvo.cota_mensal_kg || 15);
-      setTipoRacaoEntrega(alvo.qtd_caes >= alvo.qtd_gatos ? 'Ração Canina Adulto (Premium)' : 'Ração Felina Adulto');
+      const kg = alvo.cota_mensal_kg || 25;
+      const sacos = Math.max(1, Math.round(kg / 25));
+      setQtdKgEntrega(kg);
+      const especiePref = alvo.qtd_caes >= alvo.qtd_gatos ? 'Ração Canina' : 'Ração Felina';
+      setTipoRacaoEntrega(`${sacos} ${sacos === 1 ? 'Saco' : 'Sacos'} de 25kg (${especiePref} Adulto)`);
     }
     setModalEntregaOpen(true);
   };
@@ -254,6 +259,14 @@ export default function GestaoBancoRacao() {
           <p className="text-sm text-slate-500">
             Segurança alimentar animal para protetores independentes e famílias de baixa renda em Arapongas - PR.
           </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="text-[11px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full">
+              Regra Oficial: Sacos de 25kg
+            </span>
+            <span className="text-xs text-slate-600 font-semibold">
+              05 a 09: <strong>1 saco (25kg)</strong> • 10 a 15: <strong>2 sacos (50kg)</strong> • 16 a 20: <strong>3 sacos (75kg)</strong> • a cada +5: <strong>+1 saco (+25kg)</strong>
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -553,7 +566,9 @@ export default function GestaoBancoRacao() {
 
                       <td className="p-3.5">
                         <span className="font-black text-slate-900 text-sm">{b.cota_mensal_kg} KG</span>
-                        <span className="text-[10px] text-slate-500 block">/mês</span>
+                        <span className="text-[10px] text-emerald-700 font-bold block">
+                          {Math.round(b.cota_mensal_kg / 25)} {Math.round(b.cota_mensal_kg / 25) === 1 ? 'saco (25kg)' : 'sacos (25kg)'}
+                        </span>
                       </td>
 
                       <td className="p-3.5">
@@ -577,7 +592,9 @@ export default function GestaoBancoRacao() {
                           <button
                             onClick={() => {
                               setBeneficiarioAnalise(b);
-                              setCotaAprovadaKg(b.cota_mensal_kg || 30);
+                              const total = (b.qtd_caes || 0) + (b.qtd_gatos || 0);
+                              const sugerido = b.cota_mensal_kg || calcularCotaDetalhada(total).kg || 25;
+                              setCotaAprovadaKg(sugerido);
                               setModalAnaliseOpen(true);
                             }}
                             title="Ver Documentos e Analisar Inscrição"
@@ -670,14 +687,20 @@ export default function GestaoBancoRacao() {
                   const bId = e.target.value;
                   setBeneficiarioIdSelecionado(bId);
                   const alvo = beneficiarios.find(b => b.id === bId);
-                  if (alvo) setQtdKgEntrega(alvo.cota_mensal_kg || 15);
+                  if (alvo) {
+                    const kg = alvo.cota_mensal_kg || 25;
+                    const sacos = Math.max(1, Math.round(kg / 25));
+                    setQtdKgEntrega(kg);
+                    const especiePref = alvo.qtd_caes >= alvo.qtd_gatos ? 'Ração Canina' : 'Ração Felina';
+                    setTipoRacaoEntrega(`${sacos} ${sacos === 1 ? 'Saco' : 'Sacos'} de 25kg (${especiePref} Adulto)`);
+                  }
                 }}
                 className="w-full text-xs font-semibold p-2.5 bg-slate-50 border border-slate-300 rounded-xl"
               >
                 <option value="">Selecione o beneficiário...</option>
                 {beneficiarios.filter(b => b.status === 'aprovado').map(b => (
                   <option key={b.id} value={b.id}>
-                    {b.nome} ({b.bairro}) • Cota: {b.cota_mensal_kg} KG/mês
+                    {b.nome} ({b.bairro}) • Cota: {b.cota_mensal_kg} KG ({Math.round(b.cota_mensal_kg / 25)} {Math.round(b.cota_mensal_kg / 25) === 1 ? 'saco' : 'sacos'} 25kg)
                   </option>
                 ))}
               </select>
@@ -686,20 +709,61 @@ export default function GestaoBancoRacao() {
             {benSelecionadoObj && (
               <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs space-y-1">
                 <p><strong>Tutor / Protetor:</strong> {benSelecionadoObj.nome} (CPF: {benSelecionadoObj.cpf})</p>
-                <p><strong>Animais:</strong> {benSelecionadoObj.qtd_caes} cães e {benSelecionadoObj.qtd_gatos} gatos</p>
-                <p><strong>Cota Autorizada:</strong> {benSelecionadoObj.cota_mensal_kg} KG por mês</p>
+                <p><strong>Animais Sob Guarda:</strong> {benSelecionadoObj.qtd_caes} cães e {benSelecionadoObj.qtd_gatos} gatos (Total: {benSelecionadoObj.qtd_caes + benSelecionadoObj.qtd_gatos})</p>
+                <p className="text-emerald-900 font-bold">
+                  <strong>Cota Autorizada:</strong> {benSelecionadoObj.cota_mensal_kg} KG ({Math.round(benSelecionadoObj.cota_mensal_kg / 25)} {Math.round(benSelecionadoObj.cota_mensal_kg / 25) === 1 ? 'saco de 25kg' : 'sacos de 25kg'}) por mês
+                </p>
               </div>
             )}
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700">
+                  Seleção Rápida de Sacos de 25kg:
+                </label>
+                <span className="text-[11px] font-black text-emerald-700">
+                  {Math.round(qtdKgEntrega / 25)} {Math.round(qtdKgEntrega / 25) === 1 ? 'Saco' : 'Sacos'} de 25kg ({qtdKgEntrega} KG)
+                </span>
+              </div>
+              <div className="grid grid-cols-5 gap-1.5">
+                {[
+                  { sacos: 1, kg: 25 },
+                  { sacos: 2, kg: 50 },
+                  { sacos: 3, kg: 75 },
+                  { sacos: 4, kg: 100 },
+                  { sacos: 5, kg: 125 }
+                ].map((item) => (
+                  <button
+                    key={item.sacos}
+                    type="button"
+                    onClick={() => {
+                      setQtdKgEntrega(item.kg);
+                      const baseTipo = tipoRacaoEntrega.replace(/^\d+\s+Sacos?\s+de\s+25kg\s*\(/i, '').replace(/\)$/, '') || 'Ração Adulto';
+                      setTipoRacaoEntrega(`${item.sacos} ${item.sacos === 1 ? 'Saco' : 'Sacos'} de 25kg (${baseTipo})`);
+                    }}
+                    className={`py-1.5 px-1 rounded-lg text-xs font-black text-center transition-all border ${
+                      qtdKgEntrega === item.kg
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-emerald-50'
+                    }`}
+                  >
+                    <div>{item.sacos} {item.sacos === 1 ? 'Saco' : 'Sacos'}</div>
+                    <span className="text-[10px] opacity-75 font-normal">{item.kg}kg</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Quantidade a Entregar (KG) *
+                  Volume em KG *
                 </label>
                 <input
                   type="number"
-                  min="1"
-                  max="300"
+                  min="25"
+                  step="25"
+                  max="500"
                   required
                   value={qtdKgEntrega}
                   onChange={(e) => setQtdKgEntrega(Number(e.target.value))}
@@ -725,17 +789,14 @@ export default function GestaoBancoRacao() {
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Tipo e Especificação da Ração *
               </label>
-              <select
+              <input
+                type="text"
+                required
                 value={tipoRacaoEntrega}
                 onChange={(e) => setTipoRacaoEntrega(e.target.value)}
+                placeholder="Ex: 1 Saco de 25kg (Ração Canina Adulto)"
                 className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-medium"
-              >
-                <option value="Ração Canina Adulto (Premium)">Ração Canina Adulto (Premium)</option>
-                <option value="Ração Canina Filhote (Crescimento)">Ração Canina Filhote (Crescimento)</option>
-                <option value="Ração Felina Adulto (Premium)">Ração Felina Adulto (Premium)</option>
-                <option value="Ração Felina Filhote">Ração Felina Filhote</option>
-                <option value="Ração Mista Canina + Felina">Ração Mista Canina + Felina</option>
-              </select>
+              />
             </div>
 
             <div>
@@ -1076,15 +1137,19 @@ export default function GestaoBancoRacao() {
                     <span>🐈 {beneficiarioAnalise.qtd_gatos} gatos</span>
                     <span>Total: {beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais</span>
                   </div>
-                  {(beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos) > 7 ? (
-                    <span className="text-[11px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-300">
-                      ✅ Regra atendida (+ de 7 animais)
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
-                      ⚠️ Abaixo da regra (≤ 7 animais)
-                    </span>
-                  )}
+                  {(() => {
+                    const total = (beneficiarioAnalise.qtd_caes || 0) + (beneficiarioAnalise.qtd_gatos || 0);
+                    const cInfo = calcularCotaDetalhada(total);
+                    return total >= 5 ? (
+                      <span className="text-[11px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md border border-emerald-300">
+                        ✅ Regra atendida (≥ 5 animais • {cInfo.sacos} {cInfo.sacos === 1 ? 'saco' : 'sacos'} de 25kg)
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-black bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md border border-amber-300">
+                        ⚠️ Abaixo da regra (&lt; 5 animais)
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
@@ -1205,19 +1270,42 @@ export default function GestaoBancoRacao() {
             {/* DEFINIÇÃO DA COTA E APROVAÇÃO */}
             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-3">
               <label className="block text-xs font-bold text-emerald-950">
-                Definir Cota Mensal Concedida (KG de ração por mês):
+                Definir Cota Mensal Concedida (em Sacos de 25kg / KG total):
               </label>
-              <div className="flex items-center gap-3">
+
+              {/* Botões rápidos por saco de 25kg */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[1, 2, 3, 4, 5, 6].map(numSacos => (
+                  <button
+                    key={numSacos}
+                    type="button"
+                    onClick={() => setCotaAprovadaKg(numSacos * 25)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                      cotaAprovadaKg === numSacos * 25
+                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {numSacos} {numSacos === 1 ? 'Saco' : 'Sacos'} ({numSacos * 25}kg)
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <input
                   type="number"
-                  min="5"
-                  max="300"
+                  min="25"
+                  step="25"
+                  max="500"
                   value={cotaAprovadaKg}
                   onChange={(e) => setCotaAprovadaKg(Number(e.target.value))}
                   className="w-28 p-2 font-black text-lg bg-white border border-emerald-400 rounded-xl text-center text-emerald-900"
                 />
-                <span className="text-xs text-slate-600">
-                  Sugerido para {beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais: <strong>{beneficiarioAnalise.cota_mensal_kg || 30} KG</strong>
+                <span className="text-xs text-slate-700">
+                  Total: <strong>{cotaAprovadaKg} KG / mês</strong> ({Math.round(cotaAprovadaKg / 25)} {Math.round(cotaAprovadaKg / 25) === 1 ? 'saco de 25kg' : 'sacos de 25kg'}).<br />
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Sugerido pela regra ({beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos} animais): {calcularCotaDetalhada(beneficiarioAnalise.qtd_caes + beneficiarioAnalise.qtd_gatos).faixaDescricao}
+                  </span>
                 </span>
               </div>
             </div>

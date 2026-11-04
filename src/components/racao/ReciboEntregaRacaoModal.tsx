@@ -216,12 +216,14 @@ export default function ReciboEntregaRacaoModal({
                   </span>
                 </div>
                 {beneficiario && (
-                  <div className="sm:col-span-2 pt-1 border-t border-slate-100 flex gap-4 text-slate-700">
+                  <div className="sm:col-span-2 pt-1 border-t border-slate-100 flex flex-wrap gap-x-4 gap-y-1 text-slate-700">
                     <span>Animais sob tutela: <strong>{beneficiario.qtd_caes} Cães</strong></span>
                     <span>•</span>
                     <span><strong>{beneficiario.qtd_gatos} Gatos</strong></span>
                     <span>•</span>
-                    <span>Cota Mensal Concedida: <strong>{beneficiario.cota_mensal_kg} KG</strong></span>
+                    <span>
+                      Cota Mensal: <strong>{beneficiario.cota_mensal_kg} KG ({Math.round(beneficiario.cota_mensal_kg / 25)} {Math.round(beneficiario.cota_mensal_kg / 25) === 1 ? 'saco de 25kg' : 'sacos de 25kg'})</strong>
+                    </span>
                   </div>
                 )}
               </div>
@@ -243,6 +245,9 @@ export default function ReciboEntregaRacaoModal({
                 <div className="text-right">
                   <span className="text-xs font-bold text-emerald-900 uppercase block">Volume Entregue:</span>
                   <span className="text-3xl font-black text-emerald-700">{entrega.quantidade_kg} KG</span>
+                  <span className="text-[11px] font-black text-emerald-900 block mt-0.5">
+                    {Math.round(entrega.quantidade_kg / 25)} {Math.round(entrega.quantidade_kg / 25) === 1 ? 'saco fechado de 25kg' : 'sacos fechados de 25kg'}
+                  </span>
                 </div>
               </div>
 

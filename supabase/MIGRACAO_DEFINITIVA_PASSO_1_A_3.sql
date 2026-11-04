@@ -151,11 +151,14 @@ CREATE TABLE IF NOT EXISTS public.solicitacoes_banco_racao (
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Regra Municipal: Benefício exclusivo para famílias ou protetores com mais de 7 animais (> 7)
+-- Regra Municipal Atualizada: Benefício para famílias ou protetores a partir de 5 animais (>= 5)
+-- Faixas Oficiais: 05 a 09: 1 saco (25kg) | 10 a 15: 2 sacos (50kg) | 16 a 20: 3 sacos (75kg) | a cada +5: +1 saco (+25kg)
 ALTER TABLE public.solicitacoes_banco_racao 
   DROP CONSTRAINT IF EXISTS check_mais_de_sete_animais;
 ALTER TABLE public.solicitacoes_banco_racao 
-  ADD CONSTRAINT check_mais_de_sete_animais CHECK (qtd_caes + qtd_gatos > 7);
+  DROP CONSTRAINT IF EXISTS check_minimo_cinco_animais;
+ALTER TABLE public.solicitacoes_banco_racao 
+  ADD CONSTRAINT check_minimo_cinco_animais CHECK (qtd_caes + qtd_gatos >= 5);
 
 -- 4.2 Tabela de Entregas e Recibos do Banco de Ração
 CREATE TABLE IF NOT EXISTS public.entregas_banco_racao (

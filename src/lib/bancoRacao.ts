@@ -69,7 +69,7 @@ export const DADOS_EXEMPLO_BENEFICIARIOS: BeneficiarioRacao[] = [
     cidade: 'Arapongas - PR',
     qtd_caes: 6,
     qtd_gatos: 3,
-    cota_mensal_kg: 45,
+    cota_mensal_kg: 25, // 9 animais = Faixa 05 a 09 (1 saco de 25kg)
     status: 'aprovado',
     observacoes: 'Família em vulnerabilidade social acompanhada pelo CRAS. Cuida de animais idosos resgatados.',
     criado_em: '2026-08-10T10:00:00.000Z'
@@ -85,7 +85,7 @@ export const DADOS_EXEMPLO_BENEFICIARIOS: BeneficiarioRacao[] = [
     cidade: 'Arapongas - PR',
     qtd_caes: 18,
     qtd_gatos: 8,
-    cota_mensal_kg: 90,
+    cota_mensal_kg: 125, // 26 animais = Faixa 26 a 30 (5 sacos de 25kg)
     status: 'aprovado',
     observacoes: 'Lar temporário voluntário. Abriga animais retirados de maus-tratos em fiscalizações municipais.',
     criado_em: '2026-07-15T14:30:00.000Z'
@@ -100,9 +100,9 @@ export const DADOS_EXEMPLO_BENEFICIARIOS: BeneficiarioRacao[] = [
     endereco: 'Av. Gaturamo, 890',
     bairro: 'Conjunto Flamingos',
     cidade: 'Arapongas - PR',
-    qtd_caes: 4,
-    qtd_gatos: 0,
-    cota_mensal_kg: 30,
+    qtd_caes: 5,
+    qtd_gatos: 1,
+    cota_mensal_kg: 25, // 6 animais = Faixa 05 a 09 (1 saco de 25kg)
     status: 'em_analise',
     observacoes: 'Solicitou adesão no portal do cidadão anexando comprovante do CadÚnico.',
     criado_em: new Date().toISOString()
@@ -158,8 +158,8 @@ export const DADOS_EXEMPLO_ENTREGAS: EntregaRacao[] = [
     beneficiario_bairro: 'Vila Araponguinha',
     mes_referencia: '2026-10',
     data_entrega: '2026-10-05T14:30:00.000Z',
-    quantidade_kg: 45,
-    tipo_racao: 'Ração Canina e Felina Adulto',
+    quantidade_kg: 25,
+    tipo_racao: '1 Saco de 25kg (Ração Canina e Felina Adulto)',
     responsavel_entrega: 'Secretaria de Meio Ambiente / Aline Santos',
     observacoes: 'Retirada no galpão central do município. Apresentou RG e CadÚnico.'
   },
@@ -172,25 +172,99 @@ export const DADOS_EXEMPLO_ENTREGAS: EntregaRacao[] = [
     beneficiario_bairro: 'Jardim Primavera',
     mes_referencia: '2026-10',
     data_entrega: '2026-10-08T09:15:00.000Z',
-    quantidade_kg: 90,
-    tipo_racao: 'Ração Canina Adulto (Sacos 15kg)',
+    quantidade_kg: 125,
+    tipo_racao: '5 Sacos de 25kg (Ração Canina Adulto)',
     responsavel_entrega: 'Secretaria de Meio Ambiente / Aline Santos',
     observacoes: 'Entregue com veículo oficial no lar temporário devido ao grande volume.'
   }
 ];
 
 /**
- * Calcula a cota sugerida de ração mensal (KG) com base no número de animais
- * Média de cálculo ético municipal:
- * - Cão médio: ~6 a 8 kg/mês
- * - Gato: ~2 a 3 kg/mês
+ * Regra Oficial do Banco de Ração Municipal de Arapongas / PR:
+ * - 05 a 09 animais: 1 saco de 25kg = 25 kg/mês
+ * - 10 a 15 animais: 2 sacos de 25kg = 50 kg/mês
+ * - 16 a 20 animais: 3 sacos de 25kg = 75 kg/mês
+ * - A cada 5 adicionais: +1 saco de 25kg (+25 kg)
+ *   (21 a 25: 4 sacos = 100 kg, 26 a 30: 5 sacos = 125 kg, etc.)
+ * - Menos de 5 animais: Não elegível (mínimo de 5 animais)
+ */
+export function calcularCotaDetalhada(totalAnimais: number): {
+  elegivel: boolean;
+  sacos: number;
+  kg: number;
+  motivoIneligibilidade?: string;
+  faixaDescricao: string;
+} {
+  const total = Math.max(0, Number(totalAnimais) || 0);
+
+  if (total < 5) {
+    return {
+      elegivel: false,
+      sacos: 0,
+      kg: 0,
+      motivoIneligibilidade: 'Mínimo de 5 animais exigido pelo regulamento municipal.',
+      faixaDescricao: 'Abaixo do mínimo (Menos de 5 animais)'
+    };
+  }
+
+  if (total <= 9) {
+    return {
+      elegivel: true,
+      sacos: 1,
+      kg: 25,
+      faixaDescricao: '05 a 09 animais (1 saco de 25kg)'
+    };
+  }
+
+  if (total <= 15) {
+    return {
+      elegivel: true,
+      sacos: 2,
+      kg: 50,
+      faixaDescricao: '10 a 15 animais (2 sacos de 25kg)'
+    };
+  }
+
+  if (total <= 20) {
+    return {
+      elegivel: true,
+      sacos: 3,
+      kg: 75,
+      faixaDescricao: '16 a 20 animais (3 sacos de 25kg)'
+    };
+  }
+
+  // A partir de 21: a cada 5 animais adicionais, +1 saco de 25kg
+  const extras = total - 20;
+  const sacosExtras = Math.ceil(extras / 5);
+  const sacos = 3 + sacosExtras;
+  const kg = sacos * 25;
+  const limiteSuperior = 20 + (sacosExtras * 5);
+  const limiteInferior = limiteSuperior - 4;
+
+  return {
+    elegivel: true,
+    sacos,
+    kg,
+    faixaDescricao: `${limiteInferior} a ${limiteSuperior} animais (${sacos} sacos de 25kg)`
+  };
+}
+
+/**
+ * Calcula a cota sugerida de ração mensal (KG)
  */
 export function calcularCotaSugerida(qtdCaes: number, qtdGatos: number): number {
-  const kgCaes = Math.max(0, qtdCaes) * 7;
-  const kgGatos = Math.max(0, qtdGatos) * 2.5;
-  const total = Math.ceil(kgCaes + kgGatos);
-  // Limita teto de segurança por família comum a 120kg (para protetores pode ser maior)
-  return total > 0 ? total : 15;
+  const total = Math.max(0, Number(qtdCaes) || 0) + Math.max(0, Number(qtdGatos) || 0);
+  const calculo = calcularCotaDetalhada(total);
+  return calculo.kg;
+}
+
+/**
+ * Retorna a quantidade de sacos de 25kg sugeridos
+ */
+export function calcularSacosSugeridos(totalAnimais: number): number {
+  const calculo = calcularCotaDetalhada(totalAnimais);
+  return calculo.sacos;
 }
 
 /**

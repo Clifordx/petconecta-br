@@ -244,11 +244,14 @@ CREATE TABLE IF NOT EXISTS public.solicitacoes_banco_racao (
   criado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Regra de validação: Banco de Ração exclusivo para quem possui mais de 7 animais
+-- Regra de validação: Banco de Ração a partir de 5 animais (>= 5)
+-- Faixas: 05-09 (1 saco 25kg) | 10-15 (2 sacos 25kg) | 16-20 (3 sacos 25kg) | a cada +5 (+1 saco 25kg)
 ALTER TABLE public.solicitacoes_banco_racao 
   DROP CONSTRAINT IF EXISTS check_mais_de_sete_animais;
 ALTER TABLE public.solicitacoes_banco_racao 
-  ADD CONSTRAINT check_mais_de_sete_animais CHECK (qtd_caes + qtd_gatos > 7);
+  DROP CONSTRAINT IF EXISTS check_minimo_cinco_animais;
+ALTER TABLE public.solicitacoes_banco_racao 
+  ADD CONSTRAINT check_minimo_cinco_animais CHECK (qtd_caes + qtd_gatos >= 5);
 
 -- Tabela de Entregas e Recibos do Banco de Ração
 CREATE TABLE IF NOT EXISTS public.entregas_banco_racao (
