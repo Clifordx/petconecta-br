@@ -151,17 +151,6 @@ const Landing = () => {
                   </div>
                 </div>
 
-                {/* Card Flutuante Inferior: Banco de Ração Municipal */}
-                <div className="absolute -bottom-5 -right-3 sm:-right-6 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-emerald-100 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
-                    <Package className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 block">Banco de Ração Municipal</span>
-                    <strong className="text-xs font-black text-slate-900 block">Sacos de 25kg gratuitos</strong>
-                  </div>
-                </div>
-
               </div>
             </div>
 
