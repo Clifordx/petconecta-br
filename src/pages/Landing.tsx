@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Heart, 
@@ -9,18 +9,22 @@ import {
   CreditCard, 
   Shield, 
   Dog, 
-  Cat, 
   ArrowRight, 
+  ArrowUpRight,
   ShoppingBag, 
   Sparkles, 
   Printer,
   CheckCircle2,
   Package,
-  QrCode
+  QrCode,
+  Scissors,
+  Megaphone
 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { getMockAdocaoPets } from '@/lib/mockPets';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
-  <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-md hover:border-emerald-300 transition-all flex flex-col justify-between">
+  <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all flex flex-col justify-between">
     <div>
       <div className="h-12 w-12 bg-emerald-100/80 text-emerald-700 rounded-2xl flex items-center justify-center mb-4">
         <Icon className="h-6 w-6" />
@@ -32,19 +36,62 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: any, title: str
 );
 
 const Landing = () => {
+  const [petsAdocao, setPetsAdocao] = useState<any[]>(() => getMockAdocaoPets().slice(0, 4));
+
+  useEffect(() => {
+    const carregarPetsDestaque = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('pets')
+          .select('*, fotos_pet(url, is_principal)')
+          .eq('status', 'para_adocao')
+          .order('criado_em', { ascending: false })
+          .limit(4);
+
+        if (!error && data && data.length > 0) {
+          const mockList = getMockAdocaoPets();
+          const idsBanco = new Set(data.map((p: any) => p.id));
+          const combinados = [...data, ...mockList.filter((m: any) => !idsBanco.has(m.id))].slice(0, 4);
+          setPetsAdocao(combinados);
+        }
+      } catch {
+        // Mantém a prévia oficial instantânea
+      }
+    };
+    carregarPetsDestaque();
+  }, []);
+
+  const getFotoPet = (pet: any) => {
+    if (pet.foto_url) return pet.foto_url;
+    if (pet.fotos_pet && pet.fotos_pet.length > 0) {
+      const principal = pet.fotos_pet.find((f: any) => f.is_principal);
+      return principal?.url || pet.fotos_pet[0].url;
+    }
+    return 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=600';
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col selection:bg-emerald-500 selection:text-white">
       
       {/* ============================================================== */}
-      {/* 1. HERO SECTION SPLIT MODERNA                                  */}
+      {/* 1. HERO SECTION SPLIT MODERNA COM TEXTURA DOT-GRID             */}
       {/* ============================================================== */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/70 via-white to-slate-50 pt-12 pb-20 sm:pt-16 sm:pb-28">
+      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/75 via-white to-slate-50 pt-10 pb-20 sm:pt-14 sm:pb-28">
+        {/* Textura sutil de pontinhos (Dot Grid) */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-[0.06]"
+          style={{
+            backgroundImage: 'radial-gradient(#059669 1.25px, transparent 1.25px)',
+            backgroundSize: '24px 24px'
+          }}
+        ></div>
+
         {/* Glows decorativos de fundo */}
-        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-300/20 rounded-full blur-3xl pointer-events-none -z-0"></div>
-        <div className="absolute top-1/3 left-10 w-80 h-80 bg-teal-200/20 rounded-full blur-3xl pointer-events-none -z-0"></div>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-300/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-1/3 left-10 w-80 h-80 bg-teal-200/20 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-8 items-center">
             
             {/* COLUNA ESQUERDA: Textos, Pílula e CTAs */}
             <div className="lg:col-span-7 text-left space-y-6">
@@ -56,7 +103,7 @@ const Landing = () => {
               </div>
 
               {/* Título Principal */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.12]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
                 Cuidando dos nossos <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700">amigos de quatro patas</span>
               </h1>
 
@@ -66,7 +113,7 @@ const Landing = () => {
               </p>
 
               {/* Botões de Ação com Hierarquia Clara */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1">
                 <Link 
                   to="/cadastro" 
                   className="inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-7 py-4 rounded-2xl font-black text-base shadow-xl shadow-emerald-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
@@ -85,7 +132,7 @@ const Landing = () => {
               </div>
 
               {/* Prova Social / Comunidade */}
-              <div className="pt-6 border-t border-slate-200/80 flex flex-wrap items-center gap-4">
+              <div className="pt-5 border-t border-slate-200/80 flex flex-wrap items-center gap-4">
                 <div className="flex -space-x-2">
                   <img 
                     className="w-10 h-10 rounded-full border-2 border-white object-cover shadow-xs" 
@@ -107,7 +154,7 @@ const Landing = () => {
                   </div>
                 </div>
                 <div className="text-xs text-slate-600 leading-snug">
-                  <span className="font-black text-slate-900 block flex items-center gap-1">
+                  <span className="font-black text-slate-900 flex items-center gap-1">
                     Comunidade Ativa de Arapongas
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" />
                   </span>
@@ -116,40 +163,47 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* COLUNA DIREITA: Composição Visual com Foto e Cards Flutuantes */}
+            {/* COLUNA DIREITA: Composição Visual com Foto e Card Flutuante Clicável */}
             <div className="lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md lg:max-w-none">
                 
                 {/* Imagem Principal */}
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-200 aspect-[4/3] sm:aspect-[5/4]">
+                <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-slate-200 aspect-[4/3] sm:aspect-[5/4] group">
                   <img
                     src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=1000"
                     alt="Cães e gatos saudáveis sob proteção animal"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/65 via-slate-950/10 to-transparent"></div>
                   
                   {/* Badge na base da foto */}
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <span className="inline-flex items-center gap-1.5 bg-emerald-500/90 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full backdrop-blur-xs mb-1.5">
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-500/90 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full backdrop-blur-xs mb-1.5 shadow-xs">
                       ✓ Proteção Animal Integrada
                     </span>
-                    <h4 className="text-base sm:text-lg font-black leading-snug">
+                    <h4 className="text-base sm:text-lg font-black leading-snug drop-shadow-xs">
                       Saúde, acolhimento e posse responsável em Arapongas.
                     </h4>
                   </div>
                 </div>
 
-                {/* Card Flutuante Superior: RG Animal Inteligente */}
-                <div className="absolute -top-5 -left-3 sm:-left-6 bg-white/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold flex-shrink-0">
+                {/* Card Flutuante Superior Clicável: RG Animal Inteligente */}
+                <Link 
+                  to="/loja"
+                  title="Ver Plaquinha com QR Code na Lojinha 3D"
+                  className="group absolute -top-5 -left-3 sm:-left-6 bg-white/95 hover:bg-white backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-purple-100 hover:border-purple-300 flex items-center gap-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl cursor-pointer"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 group-hover:bg-purple-600 text-purple-700 group-hover:text-white flex items-center justify-center font-bold flex-shrink-0 transition-colors">
                     <QrCode className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="pr-1">
                     <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 block">RG Animal Oficial</span>
-                    <strong className="text-xs font-black text-slate-900 block">Carteirinha com QR Code</strong>
+                    <strong className="text-xs font-black text-slate-900 flex items-center gap-1">
+                      Carteirinha com QR Code
+                      <ArrowUpRight className="w-3.5 h-3.5 text-purple-600 opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                    </strong>
                   </div>
-                </div>
+                </Link>
 
               </div>
             </div>
@@ -159,7 +213,7 @@ const Landing = () => {
       </section>
 
       {/* ============================================================== */}
-      {/* 2. ACESSO RÁPIDO AOS SERVIÇOS MUNICIPAIS (GRID MODERNA)         */}
+      {/* 2. ACESSO RÁPIDO AOS SERVIÇOS MUNICIPAIS (ÍCONES ÚNICOS)       */}
       {/* ============================================================== */}
       <section className="relative z-20 -mt-10 sm:-mt-14 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16 w-full">
         <div className="bg-white rounded-3xl p-5 sm:p-7 shadow-xl shadow-slate-200/70 border border-slate-200/90">
@@ -172,7 +226,7 @@ const Landing = () => {
                 Acesse os Serviços Municipais em 1 Clique
               </h3>
             </div>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs text-slate-500 font-medium">
               Navegue pelos programas e atendimentos
             </span>
           </div>
@@ -182,73 +236,79 @@ const Landing = () => {
             {/* 1. Castração */}
             <Link 
               to="/cadastro" 
-              className="group bg-slate-50/80 hover:bg-emerald-50/90 p-3.5 rounded-2xl border border-slate-200/80 hover:border-emerald-300 transition-all text-center flex flex-col items-center cursor-pointer hover:shadow-xs"
+              className="relative group bg-slate-50/80 hover:bg-emerald-50 p-4 rounded-2xl border border-slate-200/80 hover:border-emerald-300 transition-all duration-200 text-center flex flex-col items-center cursor-pointer hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-xl bg-emerald-100 group-hover:bg-emerald-200/80 text-emerald-700 flex items-center justify-center mb-2.5 transition-colors">
-                <Shield className="w-5 h-5" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-11 h-11 rounded-xl bg-emerald-100 group-hover:bg-emerald-600 text-emerald-700 group-hover:text-white flex items-center justify-center mb-2.5 transition-colors">
+                <Scissors className="w-5 h-5" />
               </div>
-              <strong className="text-xs font-black text-slate-800 group-hover:text-emerald-900">Castração</strong>
-              <span className="text-[10px] text-slate-500 mt-0.5">Fila pública</span>
+              <strong className="text-xs font-black text-slate-900 group-hover:text-emerald-950">Castração</strong>
+              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Fila pública</span>
             </Link>
 
             {/* 2. Banco de Ração */}
             <Link 
               to="/app/banco-racao" 
-              className="group bg-slate-50/80 hover:bg-amber-50/90 p-3.5 rounded-2xl border border-slate-200/80 hover:border-amber-300 transition-all text-center flex flex-col items-center cursor-pointer hover:shadow-xs"
+              className="relative group bg-slate-50/80 hover:bg-amber-50 p-4 rounded-2xl border border-slate-200/80 hover:border-amber-300 transition-all duration-200 text-center flex flex-col items-center cursor-pointer hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-xl bg-amber-100 group-hover:bg-amber-200/80 text-amber-800 flex items-center justify-center mb-2.5 transition-colors">
+              <ArrowUpRight className="w-3.5 h-3.5 text-amber-600 absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-11 h-11 rounded-xl bg-amber-100 group-hover:bg-amber-600 text-amber-800 group-hover:text-white flex items-center justify-center mb-2.5 transition-colors">
                 <Package className="w-5 h-5" />
               </div>
-              <strong className="text-xs font-black text-slate-800 group-hover:text-amber-950">Banco de Ração</strong>
-              <span className="text-[10px] text-slate-500 mt-0.5">Cotas de 25kg</span>
+              <strong className="text-xs font-black text-slate-900 group-hover:text-amber-950">Banco de Ração</strong>
+              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Cotas de 25kg</span>
             </Link>
 
             {/* 3. Lojinha Pet & 3D */}
             <Link 
               to="/loja" 
-              className="group bg-slate-50/80 hover:bg-purple-50/90 p-3.5 rounded-2xl border border-slate-200/80 hover:border-purple-300 transition-all text-center flex flex-col items-center cursor-pointer hover:shadow-xs"
+              className="relative group bg-slate-50/80 hover:bg-purple-50 p-4 rounded-2xl border border-slate-200/80 hover:border-purple-300 transition-all duration-200 text-center flex flex-col items-center cursor-pointer hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-xl bg-purple-100 group-hover:bg-purple-200/80 text-purple-700 flex items-center justify-center mb-2.5 transition-colors">
+              <ArrowUpRight className="w-3.5 h-3.5 text-purple-600 absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-11 h-11 rounded-xl bg-purple-100 group-hover:bg-purple-600 text-purple-700 group-hover:text-white flex items-center justify-center mb-2.5 transition-colors">
                 <ShoppingBag className="w-5 h-5" />
               </div>
-              <strong className="text-xs font-black text-slate-800 group-hover:text-purple-900">Lojinha &amp; 3D</strong>
-              <span className="text-[10px] text-slate-500 mt-0.5">Plaquinhas QR</span>
+              <strong className="text-xs font-black text-slate-900 group-hover:text-purple-950">Lojinha &amp; 3D</strong>
+              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Plaquinhas QR</span>
             </Link>
 
             {/* 4. SOS Perdidos */}
             <Link 
               to="/sos" 
-              className="group bg-slate-50/80 hover:bg-red-50/90 p-3.5 rounded-2xl border border-slate-200/80 hover:border-red-300 transition-all text-center flex flex-col items-center cursor-pointer hover:shadow-xs"
+              className="relative group bg-slate-50/80 hover:bg-red-50 p-4 rounded-2xl border border-slate-200/80 hover:border-red-300 transition-all duration-200 text-center flex flex-col items-center cursor-pointer hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-xl bg-red-100 group-hover:bg-red-200/80 text-red-700 flex items-center justify-center mb-2.5 transition-colors">
+              <ArrowUpRight className="w-3.5 h-3.5 text-red-600 absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-11 h-11 rounded-xl bg-red-100 group-hover:bg-red-600 text-red-700 group-hover:text-white flex items-center justify-center mb-2.5 transition-colors">
                 <AlertTriangle className="w-5 h-5" />
               </div>
-              <strong className="text-xs font-black text-slate-800 group-hover:text-red-900">SOS Perdidos</strong>
-              <span className="text-[10px] text-slate-500 mt-0.5">Cartaz imediato</span>
+              <strong className="text-xs font-black text-slate-900 group-hover:text-red-950">SOS Perdidos</strong>
+              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Cartaz imediato</span>
             </Link>
 
             {/* 5. Adoção */}
             <Link 
               to="/animais" 
-              className="group bg-slate-50/80 hover:bg-rose-50/90 p-3.5 rounded-2xl border border-slate-200/80 hover:border-rose-300 transition-all text-center flex flex-col items-center cursor-pointer hover:shadow-xs"
+              className="relative group bg-slate-50/80 hover:bg-rose-50 p-4 rounded-2xl border border-slate-200/80 hover:border-rose-300 transition-all duration-200 text-center flex flex-col items-center cursor-pointer hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-xl bg-rose-100 group-hover:bg-rose-200/80 text-rose-700 flex items-center justify-center mb-2.5 transition-colors">
+              <ArrowUpRight className="w-3.5 h-3.5 text-rose-600 absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-11 h-11 rounded-xl bg-rose-100 group-hover:bg-rose-600 text-rose-700 group-hover:text-white flex items-center justify-center mb-2.5 transition-colors">
                 <Heart className="w-5 h-5" />
               </div>
-              <strong className="text-xs font-black text-slate-800 group-hover:text-rose-900">Adoção</strong>
-              <span className="text-[10px] text-slate-500 mt-0.5">Encontre seu pet</span>
+              <strong className="text-xs font-black text-slate-900 group-hover:text-rose-950">Adoção</strong>
+              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Encontre seu pet</span>
             </Link>
 
             {/* 6. Denúncias */}
             <Link 
               to="/denuncia" 
-              className="group bg-slate-50/80 hover:bg-slate-100 p-3.5 rounded-2xl border border-slate-200/80 hover:border-slate-300 transition-all text-center flex flex-col items-center cursor-pointer hover:shadow-xs"
+              className="relative group bg-slate-50/80 hover:bg-slate-100 p-4 rounded-2xl border border-slate-200/80 hover:border-slate-400 transition-all duration-200 text-center flex flex-col items-center cursor-pointer hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="w-11 h-11 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center mb-2.5 transition-colors">
-                <Shield className="w-5 h-5" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-slate-600 absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-11 h-11 rounded-xl bg-slate-200 group-hover:bg-slate-800 text-slate-700 group-hover:text-white flex items-center justify-center mb-2.5 transition-colors">
+                <Megaphone className="w-5 h-5" />
               </div>
-              <strong className="text-xs font-black text-slate-800 group-hover:text-slate-950">Denúncias</strong>
-              <span className="text-[10px] text-slate-500 mt-0.5">Canal sigiloso</span>
+              <strong className="text-xs font-black text-slate-900 group-hover:text-slate-950">Denúncias</strong>
+              <span className="text-[11px] font-medium text-slate-600 mt-0.5">Canal sigiloso</span>
             </Link>
 
           </div>
@@ -319,7 +379,96 @@ const Landing = () => {
       </section>
 
       {/* ============================================================== */}
-      {/* 4. TUDO PARA O BEM-ESTAR ANIMAL (CARDS DE RECURSOS)             */}
+      {/* 4. PRÉVIA VIVA: PETS ESPERANDO UM LAR EM ARAPONGAS             */}
+      {/* ============================================================== */}
+      <section className="py-20 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-rose-100 text-rose-800 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+                <Heart className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+                Adoção Responsável • Arapongas - PR
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+                Amigos esperando um lar cheio de carinho
+              </h2>
+              <p className="text-base text-slate-600 mt-2 max-w-2xl font-medium">
+                Todos os animais disponíveis para adoção recebem acompanhamento, vacinação e termo oficial de posse responsável.
+              </p>
+            </div>
+            <div>
+              <Link
+                to="/animais"
+                className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3.5 rounded-2xl font-black text-sm shadow-lg shadow-emerald-600/20 transition-all hover:scale-105 cursor-pointer"
+              >
+                <Heart className="w-4 h-4" />
+                <span>Ver Todos para Adoção</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {petsAdocao.map((pet: any) => (
+              <Link
+                key={pet.id}
+                to={`/animais/${pet.id}`}
+                className="bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                    <img
+                      src={getFotoPet(pet)}
+                      alt={pet.nome}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <span className="absolute top-3 left-3 bg-emerald-600/95 backdrop-blur-xs text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-full shadow-xs">
+                      Para Adoção
+                    </span>
+                    <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-xs text-slate-800 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-xs">
+                      {['cachorro', 'cao', 'cão'].includes(pet.especie?.toLowerCase()) ? '🐶 Cão' : '🐱 Gato'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
+                        {pet.nome}
+                      </h3>
+                      <span className="text-[11px] font-bold text-slate-500 capitalize">
+                        {pet.sexo === 'femea' ? 'Fêmea' : 'Macho'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 line-clamp-1 font-medium">
+                      {pet.raca || 'Sem raça definida'} • Porte {pet.porte ? pet.porte.charAt(0).toUpperCase() + pet.porte.slice(1) : 'Médio'}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {pet.castrado && (
+                        <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-md border border-blue-100">
+                          ✓ Castrado
+                        </span>
+                      )}
+                      {pet.vacinado && (
+                        <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-md border border-emerald-100">
+                          ✓ Vacinado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4 pb-4 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-black text-emerald-700 group-hover:text-emerald-800">
+                  <span>Conhecer {pet.nome}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================== */}
+      {/* 5. TUDO PARA O BEM-ESTAR ANIMAL (CARDS DE RECURSOS)             */}
       {/* ============================================================== */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -337,7 +486,7 @@ const Landing = () => {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <FeatureCard 
-              icon={Shield} 
+              icon={Scissors} 
               title="Castração Municipal" 
               description="Inscreva seus animais na fila pública de castração gratuita gerenciada pelas clínicas credenciadas." 
             />
@@ -371,7 +520,7 @@ const Landing = () => {
       </section>
 
       {/* ============================================================== */}
-      {/* 5. SEÇÃO LOJINHA PET & IMPRESSÃO 3D SOLIDÁRIA                  */}
+      {/* 6. SEÇÃO LOJINHA PET & IMPRESSÃO 3D SOLIDÁRIA                  */}
       {/* ============================================================== */}
       <section className="py-20 bg-gradient-to-b from-white to-purple-50/40 border-y border-purple-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -503,7 +652,7 @@ const Landing = () => {
       </section>
 
       {/* ============================================================== */}
-      {/* 6. COMO FUNCIONA (PASSO A PASSO EM 3 ETAPAS)                   */}
+      {/* 7. COMO FUNCIONA (PASSO A PASSO EM 3 ETAPAS)                   */}
       {/* ============================================================== */}
       <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -546,7 +695,7 @@ const Landing = () => {
       </section>
 
       {/* ============================================================== */}
-      {/* 7. CTA PARA ONGS, PROTETORES E PREFEITURAS                      */}
+      {/* 8. CTA PARA ONGS, PROTETORES E PREFEITURAS                      */}
       {/* ============================================================== */}
       <section className="bg-slate-900 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -574,7 +723,7 @@ const Landing = () => {
       </section>
 
       {/* ============================================================== */}
-      {/* 8. FOOTER INSTITUCIONAL                                        */}
+      {/* 9. FOOTER INSTITUCIONAL                                        */}
       {/* ============================================================== */}
       <footer className="bg-white border-t border-slate-200 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-xs space-y-3">

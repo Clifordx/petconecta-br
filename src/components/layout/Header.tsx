@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, 
   X, 
@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 export function Header() {
   const { user, profile, isDemoUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -78,15 +79,20 @@ export function Header() {
     ? (isClinica ? '/admin/atendimento-clinico' : (isCidadao ? '/app/meus-pets' : '/admin/dashboard')) 
     : '/';
 
+  const isActiveLink = (path: string) => {
+    if (path === '/') return location.pathname === '/';
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white/85 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-50 transition-all">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center gap-3">
-            <Link to={targetHome} className="flex items-center gap-2 text-emerald-600">
-              <PawPrint className="h-8 w-8" />
-              <span className="font-bold text-xl hidden sm:block text-gray-900">PetConecta BR</span>
+            <Link to={targetHome} className="flex items-center gap-2 text-emerald-600 group">
+              <PawPrint className="h-8 w-8 transition-transform group-hover:scale-105" />
+              <span className="font-black text-xl hidden sm:block text-slate-900 tracking-tight">PetConecta BR</span>
             </Link>
 
             {isDemoUser && (
@@ -103,22 +109,37 @@ export function Header() {
           </div>
 
           {/* Current Municipality Badge */}
-          <div className="hidden lg:flex items-center text-xs font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+          <div className="hidden lg:flex items-center text-xs font-bold text-slate-600 bg-slate-100/90 border border-slate-200/70 px-3 py-1 rounded-full">
             <MapPin className="h-3.5 w-3.5 mr-1 text-emerald-600" />
             Arapongas - PR
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-4 lg:space-x-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="text-gray-700 hover:text-emerald-600 px-1.5 py-2 text-sm font-medium transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
+          <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            {navLinks.map((link) => {
+              const active = isActiveLink(link.path);
+              const isSOS = link.path === '/sos';
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl text-sm transition-all flex items-center gap-1.5",
+                    active
+                      ? "bg-emerald-50 text-emerald-700 font-bold"
+                      : "text-slate-600 hover:text-emerald-700 hover:bg-slate-50 font-medium"
+                  )}
+                >
+                  {isSOS && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                  )}
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop Auth */}
